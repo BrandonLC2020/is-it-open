@@ -1,10 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../api/api_client.dart';
+import '../../services/api_service.dart';
 import 'search_event.dart';
 import 'search_state.dart';
 
 class SearchBloc extends Bloc<SearchEvent, SearchState> {
-  final ApiClient apiClient;
+  final ApiService apiClient;
 
   SearchBloc({required this.apiClient}) : super(const SearchState()) {
     on<SearchQueryChanged>(_onSearchQueryChanged);

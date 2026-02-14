@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../api/api_client.dart';
+import '../../services/api_service.dart';
 import '../../bloc/search/search_bloc.dart';
 import '../../bloc/search/search_event.dart';
 import '../../bloc/search/search_state.dart';
@@ -38,7 +38,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => SearchBloc(apiClient: ApiClient()),
+      create: (context) => SearchBloc(apiClient: ApiService()),
       child: Scaffold(
         appBar: AppBar(title: const Text('Search Places')),
         body: Column(

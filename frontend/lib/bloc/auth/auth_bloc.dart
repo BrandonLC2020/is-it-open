@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../api/api_client.dart';
+import '../../services/api_service.dart';
 import '../../models/user.dart';
 
 // Events
@@ -75,7 +75,7 @@ class AuthFailure extends AuthState {
 
 // Bloc
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final ApiClient apiClient;
+  final ApiService apiClient;
 
   AuthBloc({required this.apiClient}) : super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);

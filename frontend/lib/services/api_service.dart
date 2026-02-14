@@ -4,11 +4,11 @@ import 'dart:io'; // For Platform check
 import '../models/place.dart';
 import '../models/user.dart';
 
-class ApiClient {
+class ApiService {
   late final Dio _dio;
   String? _authToken;
 
-  ApiClient() {
+  ApiService() {
     // Determine Base URL based on platform
     String baseUrl = 'http://127.0.0.1:8000/api';
     if (!kIsWeb && Platform.isAndroid) {

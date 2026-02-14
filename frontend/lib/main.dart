@@ -4,7 +4,7 @@ import 'package:calendar_view/calendar_view.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'bloc/auth/auth_bloc.dart';
-import 'api/api_client.dart';
+import 'services/api_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,10 +16,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return RepositoryProvider(
-      create: (context) => ApiClient(),
+      create: (context) => ApiService(),
       child: BlocProvider(
         create: (context) =>
-            AuthBloc(apiClient: context.read<ApiClient>())..add(AppStarted()),
+            AuthBloc(apiClient: context.read<ApiService>())..add(AppStarted()),
         child: CalendarControllerProvider(
           controller: EventController(),
           child: MaterialApp(
