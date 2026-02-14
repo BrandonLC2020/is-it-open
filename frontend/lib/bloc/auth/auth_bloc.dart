@@ -166,7 +166,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (user.token != null) await prefs.setString('auth_token', user.token!);
     await prefs.setString('auth_username', user.username);
     await prefs.setInt('auth_user_id', user.id);
-    if (user.email != null)
+    if (user.email != null) {
       await prefs.setString('auth_user_email', user.email!);
+    }
   }
 }

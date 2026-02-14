@@ -31,17 +31,34 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Row(
+      body: Stack(
         children: [
-          SideMenu(
-            selectedIndex: _selectedIndex,
-            onIndexChanged: _onItemTapped,
-          ),
-          Expanded(
-            child: Scaffold(
-              appBar: AppBar(title: const Text('Is It Open')),
-              body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF1A237E), // Deep Blue
+                  Color(0xFF0D47A1), // Blue
+                  Color(0xFF880E4F), // Pink/Purple accent
+                ],
+              ),
             ),
+          ),
+          Row(
+            children: [
+              SideMenu(
+                selectedIndex: _selectedIndex,
+                onIndexChanged: _onItemTapped,
+              ),
+              Expanded(
+                child: Scaffold(
+                  backgroundColor: Colors.transparent,
+                  body: _widgetOptions.elementAt(_selectedIndex),
+                ),
+              ),
+            ],
           ),
         ],
       ),

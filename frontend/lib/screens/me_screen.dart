@@ -11,22 +11,30 @@ class MeScreen extends StatelessWidget {
       builder: (context, state) {
         if (state is AuthAuthenticated) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Me')),
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Logged in as: ${state.user.username}'),
-                  if (state.user.email != null)
-                    Text('Email: ${state.user.email}'),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<AuthBloc>().add(LogoutRequested());
-                    },
-                    child: const Text('Logout'),
-                  ),
-                ],
+            backgroundColor: Colors.transparent,
+            body: SafeArea(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Logged in as: ${state.user.username}',
+                      style: const TextStyle(color: Colors.white, fontSize: 18),
+                    ),
+                    if (state.user.email != null)
+                      Text(
+                        'Email: ${state.user.email}',
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<AuthBloc>().add(LogoutRequested());
+                      },
+                      child: const Text('Logout'),
+                    ),
+                  ],
+                ),
               ),
             ),
           );

@@ -8,7 +8,6 @@ class MapScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Map')),
       body: FlutterMap(
         options: const MapOptions(
           initialCenter: LatLng(40.7128, -74.0060), // NYC

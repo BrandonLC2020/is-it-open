@@ -48,7 +48,6 @@ class AppTheme {
       seedColor: AppColors.primary,
       primary: AppColors.primary,
       secondary: AppColors.secondary,
-      background: AppColors.white,
       surface: AppColors.white,
     ),
     scaffoldBackgroundColor: AppColors.white,

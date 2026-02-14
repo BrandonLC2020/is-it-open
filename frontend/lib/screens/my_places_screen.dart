@@ -6,8 +6,15 @@ class MyPlacesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Places')),
-      body: const Center(child: Text('My Saved Places will appear here')),
+      backgroundColor: Colors.transparent,
+      body: const SafeArea(
+        child: Center(
+          child: Text(
+            'My Saved Places will appear here',
+            style: TextStyle(color: Colors.white, fontSize: 18),
+          ),
+        ),
+      ),
     );
   }
 }

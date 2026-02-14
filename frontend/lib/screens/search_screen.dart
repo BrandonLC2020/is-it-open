@@ -40,79 +40,93 @@ class _SearchScreenState extends State<SearchScreen> {
     return BlocProvider(
       create: (context) => SearchBloc(apiClient: ApiService()),
       child: Scaffold(
-        appBar: AppBar(title: const Text('Search Places')),
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Builder(
-                builder: (context) {
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: 'Search for a place...',
-                            prefixIcon: const Icon(Icons.search),
-                            suffixIcon: IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () => _clearSearch(context),
-                            ),
-                            border: const OutlineInputBorder(),
-                          ),
-                          textInputAction: TextInputAction.search,
-                          onSubmitted: (_) => _performSearch(context),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () => _performSearch(context),
-                        child: const Text('Search'),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            Expanded(
-              child: BlocBuilder<SearchBloc, SearchState>(
-                builder: (context, state) {
-                  if (state.status == SearchStatus.loading) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (state.status == SearchStatus.failure) {
-                    return Center(child: Text('Error: ${state.error}'));
-                  } else if (state.status == SearchStatus.success) {
-                    if (state.places.isEmpty) {
-                      return const Center(child: Text('No results found'));
-                    }
-                    return ListView.builder(
-                      itemCount: state.places.length,
-                      itemBuilder: (context, index) {
-                        final place = state.places[index];
-                        return ListTile(
-                          title: Text(place.name),
-                          subtitle: Text(place.address),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    PlaceDetailScreen(place: place),
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Builder(
+                  builder: (context) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: 'Search for a place...',
+                              prefixIcon: const Icon(Icons.search),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () => _clearSearch(context),
                               ),
-                            );
-                          },
-                        );
-                      },
+                              border: const OutlineInputBorder(),
+                              filled: true,
+                              fillColor: Colors.white.withValues(alpha: 0.8),
+                            ),
+                            textInputAction: TextInputAction.search,
+                            onSubmitted: (_) => _performSearch(context),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () => _performSearch(context),
+                          child: const Text('Search'),
+                        ),
+                      ],
                     );
-                  }
-                  return const Center(
-                    child: Text('Enter a query and press Search'),
-                  );
-                },
+                  },
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: BlocBuilder<SearchBloc, SearchState>(
+                  builder: (context, state) {
+                    if (state.status == SearchStatus.loading) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (state.status == SearchStatus.failure) {
+                      return Center(child: Text('Error: ${state.error}'));
+                    } else if (state.status == SearchStatus.success) {
+                      if (state.places.isEmpty) {
+                        return const Center(child: Text('No results found'));
+                      }
+                      return ListView.builder(
+                        itemCount: state.places.length,
+                        itemBuilder: (context, index) {
+                          final place = state.places[index];
+                          return Card(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            child: ListTile(
+                              title: Text(place.name),
+                              subtitle: Text(place.address),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        PlaceDetailScreen(place: place),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      );
+                    }
+                    return const Center(
+                      child: Text(
+                        'Enter a query and press Search',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
