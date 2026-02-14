@@ -13,7 +13,8 @@ dependencies = [
     "gunicorn (>=25.1.0,<26.0.0)",
     "python-decouple (>=3.8,<4.0)",
     "dj-database-url (>=2.1.0,<3.0.0)",
-    "requests"
+    "requests",
+    "django-cors-headers"
 ]
 
 
