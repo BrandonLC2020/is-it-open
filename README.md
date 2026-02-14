@@ -20,6 +20,22 @@
 *   **Networking**: [Dio](https://pub.dev/packages/dio)
 *   **Other Key Libraries**: `calendar_view`, `shared_preferences`, `geolocator`
 
+### Architecture
+
+```mermaid
+graph TD
+    User[User Device] -->|Interacts| UI[Flutter Frontend]
+    
+    subgraph "Docker Containerized Backend"
+        API[Django Ninja API]
+        DB[(PostgreSQL + PostGIS)]
+    end
+    
+    UI -->|REST Requests (Dio)| API
+    UI -->|Tile Requests| OSM[OpenStreetMap]
+    API -->|Spatial Queries| DB
+```
+
 ---
 
 ## ✨ Features
