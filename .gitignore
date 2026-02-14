@@ -7,6 +7,20 @@
 .buildlog/
 .history
 
+# Miscellaneous (from frontend)
+.DS_Store
+.atom/
+.build/
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
 
 
 # Flutter repo-specific
@@ -39,6 +53,7 @@ analysis_benchmark.json
 **/generated_plugin_registrant.dart
 .packages
 .pub-preload-cache/
+.pub-cache/
 .pub/
 build/
 flutter_*.png
@@ -50,6 +65,9 @@ unlinked_spec.ds
 **/android/**/gradle-wrapper.jar
 .gradle/
 **/android/captures/
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
 **/android/gradlew
 **/android/gradlew.bat
 **/android/local.properties
@@ -109,6 +127,9 @@ coverage/
 
 # Symbols
 app.*.symbols
+
+# Obfuscation related
+app.*.map.json
 
 # Exceptions to above rules.
 !**/ios/**/default.mode1v3
