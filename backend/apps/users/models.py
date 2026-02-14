@@ -18,3 +18,15 @@ class AuthToken(models.Model):
 
     def __str__(self):
         return self.key
+
+
+class UserProfile(models.Model):
+    """Profile for authenticated users with address info."""
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
+    city = models.CharField(max_length=100, blank=True, default='')
+    state = models.CharField(max_length=100, blank=True, default='')
+    country = models.CharField(max_length=100, blank=True, default='')
+    street = models.CharField(max_length=255, blank=True, default='')
+
+    def __str__(self):
+        return f"Profile for {self.user.username}"

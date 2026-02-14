@@ -4,7 +4,9 @@ import 'package:calendar_view/calendar_view.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'bloc/auth/auth_bloc.dart';
+import 'bloc/theme/theme_cubit.dart';
 import 'services/api_service.dart';
+import 'utils/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,30 +19,39 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return RepositoryProvider(
       create: (context) => ApiService(),
-      child: BlocProvider(
-        create: (context) =>
-            AuthBloc(apiClient: context.read<ApiService>())..add(AppStarted()),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>(
+            create: (context) =>
+                AuthBloc(apiClient: context.read<ApiService>())
+                  ..add(AppStarted()),
+          ),
+          BlocProvider<ThemeCubit>(create: (context) => ThemeCubit()),
+        ],
         child: CalendarControllerProvider(
           controller: EventController(),
-          child: MaterialApp(
-            title: 'Is It Open',
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-              useMaterial3: true,
-            ),
-            home: BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, state) {
-                if (state is AuthAuthenticated) {
-                  return const HomeScreen();
-                }
-                if (state is AuthUnauthenticated || state is AuthFailure) {
-                  return const LoginScreen();
-                }
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              },
-            ),
+          child: BlocBuilder<ThemeCubit, ThemeMode>(
+            builder: (context, themeMode) {
+              return MaterialApp(
+                title: 'Is It Open',
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: themeMode,
+                home: BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    if (state is AuthAuthenticated) {
+                      return const HomeScreen();
+                    }
+                    if (state is AuthUnauthenticated || state is AuthFailure) {
+                      return const LoginScreen();
+                    }
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                ),
+              );
+            },
           ),
         ),
       ),

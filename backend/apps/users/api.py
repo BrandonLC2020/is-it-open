@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from ninja.errors import HttpError
-from .models import AuthToken
+from .models import AuthToken, UserProfile
 from typing import Optional
 
 router = Router()
@@ -17,6 +17,12 @@ class AuthOutput(Schema):
     username: str
     id: int
     email: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    city: Optional[str] = ''
+    state: Optional[str] = ''
+    country: Optional[str] = ''
+    street: Optional[str] = ''
 
 class RegisterInput(Schema):
     username: str
@@ -30,11 +36,21 @@ def login(request, data: LoginInput):
         raise HttpError(401, "Invalid credentials")
     
     token, created = AuthToken.objects.get_or_create(user=user)
+    # Ensure profile exists
+    if not hasattr(user, 'profile'):
+        UserProfile.objects.create(user=user)
+    
     return {
         "token": token.key,
         "username": user.username,
         "id": user.id,
-        "email": user.email
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "city": user.profile.city,
+        "state": user.profile.state,
+        "country": user.profile.country,
+        "street": user.profile.street
     }
 
 @router.post("/register", response=AuthOutput)
@@ -49,12 +65,20 @@ def register(request, data: RegisterInput):
     )
     
     token = AuthToken.objects.create(user=user)
+    # Create UserProfile
+    profile = UserProfile.objects.create(user=user)
     
     return {
         "token": token.key,
         "username": user.username,
         "id": user.id,
-        "email": user.email
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "city": profile.city,
+        "state": profile.state,
+        "country": profile.country,
+        "street": profile.street
     }
 
 @router.get("/me", response=AuthOutput)
@@ -73,9 +97,19 @@ def me(request):
         token_obj = AuthToken.objects.create(user=request.user)
         token = token_obj.key
 
+    # Ensure profile exists
+    if not hasattr(request.user, 'profile'):
+        UserProfile.objects.create(user=request.user)
+
     return {
         "token": token,
         "username": request.user.username,
         "id": request.user.id,
-        "email": request.user.email
+        "email": request.user.email,
+        "first_name": request.user.first_name,
+        "last_name": request.user.last_name,
+        "city": request.user.profile.city,
+        "state": request.user.profile.state,
+        "country": request.user.profile.country,
+        "street": request.user.profile.street
     }

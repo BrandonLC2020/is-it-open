@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'search_screen.dart';
 import 'map_screen.dart';
 import 'my_places_screen.dart';
+import '../components/shared/side_menu.dart';
 import 'me_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -30,19 +31,19 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
-          BottomNavigationBarItem(icon: Icon(Icons.star), label: 'My Places'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Me'),
+      body: Row(
+        children: [
+          SideMenu(
+            selectedIndex: _selectedIndex,
+            onIndexChanged: _onItemTapped,
+          ),
+          Expanded(
+            child: Scaffold(
+              appBar: AppBar(title: const Text('Is It Open')),
+              body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
+            ),
+          ),
         ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
       ),
     );
   }
