@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../api/api_client.dart';
-import '../../blocs/search/search_bloc.dart';
-import '../../blocs/search/search_event.dart';
-import '../../blocs/search/search_state.dart';
+import '../../bloc/search/search_bloc.dart';
+import '../../bloc/search/search_event.dart';
+import '../../bloc/search/search_state.dart';
 
 import 'place_detail_screen.dart'; // Will be created next
 

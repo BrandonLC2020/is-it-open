@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../blocs/auth/auth_bloc.dart';
+import '../bloc/auth/auth_bloc.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {

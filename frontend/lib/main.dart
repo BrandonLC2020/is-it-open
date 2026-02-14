@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:calendar_view/calendar_view.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
-import 'blocs/auth/auth_bloc.dart';
+import 'bloc/auth/auth_bloc.dart';
 import 'api/api_client.dart';
 
 void main() {
