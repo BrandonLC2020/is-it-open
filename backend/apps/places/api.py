@@ -1,9 +1,9 @@
 from ninja import Router
 from typing import List
-from app.services.tomtom import TomTomClient
-from app.services.tomtom import TomTomClient
+from services.tomtom import TomTomClient
+
 from .models import Place
-from app.hours.models import BusinessHours
+from apps.hours.models import BusinessHours
 from django.shortcuts import get_object_or_404
 from ninja import Schema
 
@@ -30,11 +30,10 @@ class PlaceCreateSchema(Schema):
     longitude: float
     hours: List[BusinessHoursSchema] = []
 
-@router.get("/search")
+@router.get("/search", response=List[PlaceCreateSchema])
 def search_places(request, query: str):
     client = TomTomClient()
     results = client.search_place(query)
-    # We might want to format this
     return results
 
 @router.post("/", response=PlaceSchema)

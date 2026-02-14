@@ -1,5 +1,5 @@
 from django.db import models
-from app.places.models import Place
+from apps.places.models import Place
 
 class BusinessHours(models.Model):
     place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name='hours')

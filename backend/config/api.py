@@ -1,5 +1,5 @@
 from ninja import NinjaAPI
-from app.places.api import router as places_router
+from apps.places.api import router as places_router
 
 api = NinjaAPI()
 

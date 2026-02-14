@@ -1,5 +1,5 @@
 from django.test import TestCase, Client
-from app.places.models import Place
+from apps.places.models import Place
 import json
 
 class PlaceApiTest(TestCase):

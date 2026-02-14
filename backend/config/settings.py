@@ -43,9 +43,9 @@ INSTALLED_APPS = [
     'django.contrib.gis',  # Don't forget GeoDjango!
     
     # Your Apps
-    'app.places',
-    'app.hours',
-    'app.users',
+    'apps.places',
+    'apps.hours',
+    'apps.users',
 ]
 
 MIDDLEWARE = [
@@ -58,7 +58,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'app.urls'
+ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
@@ -75,7 +75,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'app.wsgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
