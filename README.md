@@ -24,16 +24,16 @@
 
 ```mermaid
 graph TD
-    User[User Device] -->|Interacts| UI[Flutter Frontend]
+    User["User Device"] -->|Interacts| UI["Flutter Frontend"]
     
     subgraph "Docker Containerized Backend"
-        API[Django Ninja API]
-        DB[(PostgreSQL + PostGIS)]
+        API["Django Ninja API"]
+        DB[("PostgreSQL + PostGIS")]
     end
     
-    UI -->|REST Requests (Dio)| API
-    UI -->|Tile Requests| OSM[OpenStreetMap]
-    API -->|Spatial Queries| DB
+    UI -->|"REST Requests (Dio)"| API
+    UI -->|"Tile Requests"| OSM["OpenStreetMap"]
+    API -->|"Spatial Queries"| DB
 ```
 
 ---
