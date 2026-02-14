@@ -4,6 +4,7 @@ import 'map_screen.dart';
 import 'my_places_screen.dart';
 import '../components/shared/side_menu.dart';
 import 'me_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
     MapScreen(),
     MyPlacesScreen(),
     MeScreen(),
+    SettingsScreen(),
   ];
 
   void _onItemTapped(int index) {

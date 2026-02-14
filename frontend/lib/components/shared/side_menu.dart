@@ -57,6 +57,7 @@ class SideMenu extends StatelessWidget {
                 _buildNavItem(context, 1, 'Map', Icons.map),
                 _buildNavItem(context, 2, 'My Places', Icons.star),
                 _buildNavItem(context, 3, 'Me', Icons.person),
+                _buildNavItem(context, 4, 'Settings', Icons.settings),
               ],
             ),
           ),
