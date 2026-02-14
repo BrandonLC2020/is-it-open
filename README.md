@@ -22,6 +22,16 @@
 
 ---
 
+## ✨ Features
+
+*   **Modern UI**: Fully overhauled **Glassmorphism** design with vibrant gradient backgrounds and frosted glass elements.
+*   **Navigation**: Centralized **Side Menu** for quick access to Map, Search, Saved Places, Profile, and Settings.
+*   **Geospatial Search**: Find places and business hours based on location (powered by PostGIS).
+*   **Map Integration**: Interactive maps using OpenStreetMap tiles.
+*   **Theme Control**: Light/Dark mode toggles with system reference.
+
+---
+
 ## 📋 Prerequisites
 
 Before you begin, ensure you have the following installed:
