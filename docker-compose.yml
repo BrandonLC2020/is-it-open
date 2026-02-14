@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # The Database Service
+  db:
+    image: postgis/postgis:15-3.4
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=isitopen_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+
+  # The Django Backend
+  backend:
+    build: ./backend
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DEBUG=1
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/isitopen_db
+
+volumes:
+  postgres_data:
