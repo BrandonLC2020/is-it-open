@@ -10,7 +10,7 @@ up:
 down:
 	docker compose down
 
-# Rebuild the containers (use after adding new Poetry packages)
+# Rebuild the containers (use after adding new uv packages)
 build:
 	docker compose up -d --build
 

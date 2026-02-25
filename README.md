@@ -9,7 +9,7 @@
 ### Backend
 *   **Framework**: [Django](https://www.djangoproject.com/) + [Django Ninja](https://django-ninja.rest-framework.com/) (FastAPI-like syntax for Django)
 *   **Database**: [PostgreSQL](https://www.postgresql.org/) with [PostGIS](https://postgis.net/) (Geospatial data support)
-*   **Dependency Management**: [Poetry](https://python-poetry.org/)
+*   **Dependency Management**: [uv](https://github.com/astral-sh/uv)
 *   **Containerization**: [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/)
 *   **Utilities**: `python-decouple` (Config), `gunicorn` (WSGI Server)
 
@@ -109,7 +109,7 @@ is-it-open/
 │   │   └── hours/          # Business hours logic
 │   ├── config/             # Project settings (settings.py, urls.py)
 │   ├── Dockerfile          # Backend container definition
-│   └── pyproject.toml      # Poetry dependencies
+│   └── pyproject.toml      # uv dependencies
 │
 ├── frontend/               # Flutter Project
 │   ├── lib/                # Dart source code
@@ -132,7 +132,7 @@ Use these commands from the root directory to manage the project:
 | :--- | :--- |
 | `make up` | Start all services in the background (detached mode) |
 | `make down` | Stop and remove all containers |
-| `make build` | Rebuild the containers (run after adding new Poetry packages) |
+| `make build` | Rebuild the containers (run after adding new uv packages) |
 | `make logs` | View backend logs in follow mode |
 | `make shell` | Access the backend container's shell (`bash`) |
 | `make migrate` | Run Django database migrations |
