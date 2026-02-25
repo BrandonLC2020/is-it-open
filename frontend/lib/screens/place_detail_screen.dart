@@ -53,14 +53,20 @@ class PlaceDetailScreen extends StatelessWidget {
             await apiService.bookmarkPlace(place.tomtomId);
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Saved to My Places!')),
+                const SnackBar(
+                  content: Text('Saved to My Places!'),
+                  backgroundColor: Colors.green,
+                ),
               );
             }
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text('Error saving place')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Error saving place'),
+                  backgroundColor: Colors.red,
+                ),
+              );
             }
           }
         },

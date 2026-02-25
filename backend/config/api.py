@@ -1,17 +1,7 @@
 from ninja import NinjaAPI
-from ninja.security import HttpBearer
 from apps.places.api import router as places_router
 from apps.users.api import router as users_router
-from apps.users.models import AuthToken
-from typing import Optional
-
-class GlobalAuth(HttpBearer):
-    def authenticate(self, request, token):
-        try:
-            auth_token = AuthToken.objects.get(key=token)
-            return auth_token.user
-        except AuthToken.DoesNotExist:
-            return None
+from apps.users.auth import GlobalAuth
 
 api = NinjaAPI(auth=GlobalAuth()) # Apply global auth by default, or per router
 

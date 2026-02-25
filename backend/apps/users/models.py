@@ -30,10 +30,18 @@ class UserProfile(models.Model):
 
     # New Location Fields
     home_address = models.CharField(max_length=255, blank=True, default='')
+    home_street = models.CharField(max_length=255, blank=True, default='')
+    home_city = models.CharField(max_length=100, blank=True, default='')
+    home_state = models.CharField(max_length=100, blank=True, default='')
+    home_zip = models.CharField(max_length=20, blank=True, default='')
     home_lat = models.FloatField(null=True, blank=True)
     home_lng = models.FloatField(null=True, blank=True)
     
     work_address = models.CharField(max_length=255, blank=True, default='')
+    work_street = models.CharField(max_length=255, blank=True, default='')
+    work_city = models.CharField(max_length=100, blank=True, default='')
+    work_state = models.CharField(max_length=100, blank=True, default='')
+    work_zip = models.CharField(max_length=20, blank=True, default='')
     work_lat = models.FloatField(null=True, blank=True)
     work_lng = models.FloatField(null=True, blank=True)
     

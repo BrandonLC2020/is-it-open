@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from ninja.errors import HttpError
 from .models import AuthToken, UserProfile
+from .auth import GlobalAuth
 from typing import Optional
 
 router = Router()
@@ -20,9 +21,17 @@ class AuthOutput(Schema):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     home_address: Optional[str] = ''
+    home_street: Optional[str] = ''
+    home_city: Optional[str] = ''
+    home_state: Optional[str] = ''
+    home_zip: Optional[str] = ''
     home_lat: Optional[float] = None
     home_lng: Optional[float] = None
     work_address: Optional[str] = ''
+    work_street: Optional[str] = ''
+    work_city: Optional[str] = ''
+    work_state: Optional[str] = ''
+    work_zip: Optional[str] = ''
     work_lat: Optional[float] = None
     work_lng: Optional[float] = None
     use_current_location: bool = False
@@ -51,9 +60,17 @@ def login(request, data: LoginInput):
         "first_name": user.first_name,
         "last_name": user.last_name,
         "home_address": user.profile.home_address,
+        "home_street": user.profile.home_street,
+        "home_city": user.profile.home_city,
+        "home_state": user.profile.home_state,
+        "home_zip": user.profile.home_zip,
         "home_lat": user.profile.home_lat,
         "home_lng": user.profile.home_lng,
         "work_address": user.profile.work_address,
+        "work_street": user.profile.work_street,
+        "work_city": user.profile.work_city,
+        "work_state": user.profile.work_state,
+        "work_zip": user.profile.work_zip,
         "work_lat": user.profile.work_lat,
         "work_lng": user.profile.work_lng,
         "use_current_location": user.profile.use_current_location
@@ -82,15 +99,23 @@ def register(request, data: RegisterInput):
         "first_name": user.first_name,
         "last_name": user.last_name,
         "home_address": profile.home_address,
+        "home_street": profile.home_street,
+        "home_city": profile.home_city,
+        "home_state": profile.home_state,
+        "home_zip": profile.home_zip,
         "home_lat": profile.home_lat,
         "home_lng": profile.home_lng,
         "work_address": profile.work_address,
+        "work_street": profile.work_street,
+        "work_city": profile.work_city,
+        "work_state": profile.work_state,
+        "work_zip": profile.work_zip,
         "work_lat": profile.work_lat,
         "work_lng": profile.work_lng,
         "use_current_location": profile.use_current_location
     }
 
-@router.get("/me", response=AuthOutput)
+@router.get("/me", response=AuthOutput, auth=GlobalAuth())
 def me(request):
     # This endpoint will require auth, handled by global or router level security
     if not request.user.is_authenticated:
@@ -118,9 +143,17 @@ def me(request):
         "first_name": request.user.first_name,
         "last_name": request.user.last_name,
         "home_address": request.user.profile.home_address,
+        "home_street": request.user.profile.home_street,
+        "home_city": request.user.profile.home_city,
+        "home_state": request.user.profile.home_state,
+        "home_zip": request.user.profile.home_zip,
         "home_lat": request.user.profile.home_lat,
         "home_lng": request.user.profile.home_lng,
         "work_address": request.user.profile.work_address,
+        "work_street": request.user.profile.work_street,
+        "work_city": request.user.profile.work_city,
+        "work_state": request.user.profile.work_state,
+        "work_zip": request.user.profile.work_zip,
         "work_lat": request.user.profile.work_lat,
         "work_lng": request.user.profile.work_lng,
         "use_current_location": request.user.profile.use_current_location
@@ -130,14 +163,22 @@ class ProfileUpdateInput(Schema):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     home_address: Optional[str] = None
+    home_street: Optional[str] = None
+    home_city: Optional[str] = None
+    home_state: Optional[str] = None
+    home_zip: Optional[str] = None
     home_lat: Optional[float] = None
     home_lng: Optional[float] = None
     work_address: Optional[str] = None
+    work_street: Optional[str] = None
+    work_city: Optional[str] = None
+    work_state: Optional[str] = None
+    work_zip: Optional[str] = None
     work_lat: Optional[float] = None
     work_lng: Optional[float] = None
     use_current_location: Optional[bool] = None
 
-@router.put("/me", response=AuthOutput)
+@router.put("/me", response=AuthOutput, auth=GlobalAuth())
 def update_me(request, data: ProfileUpdateInput):
     if not request.user.is_authenticated:
         raise HttpError(401, "Unauthorized")
@@ -167,6 +208,18 @@ def update_me(request, data: ProfileUpdateInput):
     if data.home_address is not None:
         profile.home_address = data.home_address
         profile_updated = True
+    if data.home_street is not None:
+        profile.home_street = data.home_street
+        profile_updated = True
+    if data.home_city is not None:
+        profile.home_city = data.home_city
+        profile_updated = True
+    if data.home_state is not None:
+        profile.home_state = data.home_state
+        profile_updated = True
+    if data.home_zip is not None:
+        profile.home_zip = data.home_zip
+        profile_updated = True
     if data.home_lat is not None:
         profile.home_lat = data.home_lat
         profile_updated = True
@@ -176,6 +229,18 @@ def update_me(request, data: ProfileUpdateInput):
         
     if data.work_address is not None:
         profile.work_address = data.work_address
+        profile_updated = True
+    if data.work_street is not None:
+        profile.work_street = data.work_street
+        profile_updated = True
+    if data.work_city is not None:
+        profile.work_city = data.work_city
+        profile_updated = True
+    if data.work_state is not None:
+        profile.work_state = data.work_state
+        profile_updated = True
+    if data.work_zip is not None:
+        profile.work_zip = data.work_zip
         profile_updated = True
     if data.work_lat is not None:
         profile.work_lat = data.work_lat
@@ -205,9 +270,17 @@ def update_me(request, data: ProfileUpdateInput):
         "first_name": user.first_name,
         "last_name": user.last_name,
         "home_address": profile.home_address,
+        "home_street": profile.home_street,
+        "home_city": profile.home_city,
+        "home_state": profile.home_state,
+        "home_zip": profile.home_zip,
         "home_lat": profile.home_lat,
         "home_lng": profile.home_lng,
         "work_address": profile.work_address,
+        "work_street": profile.work_street,
+        "work_city": profile.work_city,
+        "work_state": profile.work_state,
+        "work_zip": profile.work_zip,
         "work_lat": profile.work_lat,
         "work_lng": profile.work_lng,
         "use_current_location": profile.use_current_location

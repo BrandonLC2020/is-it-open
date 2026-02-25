@@ -38,7 +38,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => SearchBloc(apiClient: ApiService()),
+      create: (context) => SearchBloc(apiClient: context.read<ApiService>()),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(

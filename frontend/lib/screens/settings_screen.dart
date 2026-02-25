@@ -1,23 +1,190 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geolocator/geolocator.dart';
+import '../bloc/auth/auth_bloc.dart';
+import '../models/user.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: Center(
-          child: Text(
-            'Settings will be implemented here',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 18,
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _isUpdating = false;
+
+  Future<void> _handleCurrentLocationToggle(
+    bool value,
+    User currentUser,
+  ) async {
+    setState(() {
+      _isUpdating = true;
+    });
+
+    double? currentLat = currentUser.homeLat;
+    double? currentLng = currentUser.homeLng;
+
+    if (value) {
+      bool serviceEnabled;
+      LocationPermission permission;
+
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location services are disabled.')),
+          );
+          setState(() {
+            _isUpdating = false;
+          });
+        }
+        return;
+      }
+
+      permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Location permissions are denied')),
+            );
+            setState(() {
+              _isUpdating = false;
+            });
+          }
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location permissions are permanently denied.'),
             ),
-          ),
-        ),
-      ),
+          );
+          setState(() {
+            _isUpdating = false;
+          });
+        }
+        return;
+      }
+
+      try {
+        Position position = await Geolocator.getCurrentPosition();
+        currentLat = position.latitude;
+        currentLng = position.longitude;
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error getting location: $e')));
+          setState(() {
+            _isUpdating = false;
+          });
+        }
+        return;
+      }
+    }
+
+    final updatedUser = User(
+      id: currentUser.id,
+      username: currentUser.username,
+      email: currentUser.email,
+      firstName: currentUser.firstName,
+      lastName: currentUser.lastName,
+      homeAddress: currentUser.homeAddress,
+      homeStreet: currentUser.homeStreet,
+      homeCity: currentUser.homeCity,
+      homeState: currentUser.homeState,
+      homeZip: currentUser.homeZip,
+      homeLat: value ? currentLat : currentUser.homeLat,
+      homeLng: value ? currentLng : currentUser.homeLng,
+      workAddress: currentUser.workAddress,
+      workStreet: currentUser.workStreet,
+      workCity: currentUser.workCity,
+      workState: currentUser.workState,
+      workZip: currentUser.workZip,
+      workLat: currentUser.workLat,
+      workLng: currentUser.workLng,
+      useCurrentLocation: value,
+    );
+
+    if (mounted) {
+      context.read<AuthBloc>().add(
+        ProfileUpdateRequested(updatedUser: updatedUser),
+      );
+      setState(() {
+        _isUpdating = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is ProfileUpdateSuccess) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Settings saved successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else if (state is AuthFailure) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.error), backgroundColor: Colors.red),
+          );
+        }
+      },
+      builder: (context, state) {
+        if (state is AuthAuthenticated) {
+          final user = state.user;
+          return Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              title: const Text('Settings'),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+            ),
+            body: SafeArea(
+              child: ListView(
+                padding: const EdgeInsets.all(16.0),
+                children: [
+                  Text(
+                    'Location Preferences',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    title: const Text('Use Current Location'),
+                    subtitle: const Text(
+                      'Allow the app to access your device location',
+                    ),
+                    value: user.useCurrentLocation,
+                    onChanged: _isUpdating
+                        ? null
+                        : (value) => _handleCurrentLocationToggle(value, user),
+                  ),
+                  if (_isUpdating)
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                ],
+              ),
+            ),
+          );
+        } else {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+      },
     );
   }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:geolocator/geolocator.dart';
 import '../bloc/auth/auth_bloc.dart';
 import '../models/user.dart';
+import '../components/shared/address_input_accordion.dart';
 
 class MeScreen extends StatefulWidget {
   const MeScreen({super.key});
@@ -17,11 +17,15 @@ class _MeScreenState extends State<MeScreen> {
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
   late TextEditingController _homeAddressController;
+  late TextEditingController _homeStreetController;
+  late TextEditingController _homeCityController;
+  late TextEditingController _homeStateController;
+  late TextEditingController _homeZipController;
   late TextEditingController _workAddressController;
-
-  bool _useCurrentLocation = false;
-  double? _currentLat;
-  double? _currentLng;
+  late TextEditingController _workStreetController;
+  late TextEditingController _workCityController;
+  late TextEditingController _workStateController;
+  late TextEditingController _workZipController;
 
   @override
   void initState() {
@@ -29,7 +33,15 @@ class _MeScreenState extends State<MeScreen> {
     _firstNameController = TextEditingController();
     _lastNameController = TextEditingController();
     _homeAddressController = TextEditingController();
+    _homeStreetController = TextEditingController();
+    _homeCityController = TextEditingController();
+    _homeStateController = TextEditingController();
+    _homeZipController = TextEditingController();
     _workAddressController = TextEditingController();
+    _workStreetController = TextEditingController();
+    _workCityController = TextEditingController();
+    _workStateController = TextEditingController();
+    _workZipController = TextEditingController();
 
     // Initialize controllers with current user data if available
     final authState = context.read<AuthBloc>().state;
@@ -38,8 +50,15 @@ class _MeScreenState extends State<MeScreen> {
       _firstNameController.text = user.firstName ?? '';
       _lastNameController.text = user.lastName ?? '';
       _homeAddressController.text = user.homeAddress ?? '';
+      _homeStreetController.text = user.homeStreet ?? '';
+      _homeCityController.text = user.homeCity ?? '';
+      _homeStateController.text = user.homeState ?? '';
+      _homeZipController.text = user.homeZip ?? '';
       _workAddressController.text = user.workAddress ?? '';
-      _useCurrentLocation = user.useCurrentLocation;
+      _workStreetController.text = user.workStreet ?? '';
+      _workCityController.text = user.workCity ?? '';
+      _workStateController.text = user.workState ?? '';
+      _workZipController.text = user.workZip ?? '';
     }
   }
 
@@ -48,70 +67,16 @@ class _MeScreenState extends State<MeScreen> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _homeAddressController.dispose();
+    _homeStreetController.dispose();
+    _homeCityController.dispose();
+    _homeStateController.dispose();
+    _homeZipController.dispose();
     _workAddressController.dispose();
+    _workStreetController.dispose();
+    _workCityController.dispose();
+    _workStateController.dispose();
+    _workZipController.dispose();
     super.dispose();
-  }
-
-  Future<void> _handleCurrentLocationToggle(bool value) async {
-    if (value) {
-      bool serviceEnabled;
-      LocationPermission permission;
-
-      serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location services are disabled.')),
-          );
-        }
-        return;
-      }
-
-      permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Location permissions are denied')),
-            );
-          }
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Location permissions are permanently denied.'),
-            ),
-          );
-        }
-        return;
-      }
-
-      try {
-        Position position = await Geolocator.getCurrentPosition();
-        setState(() {
-          _useCurrentLocation = true;
-          _currentLat = position.latitude;
-          _currentLng = position.longitude;
-        });
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error getting location: $e')));
-        }
-      }
-    } else {
-      setState(() {
-        _useCurrentLocation = false;
-        _currentLat = null;
-        _currentLng = null;
-      });
-    }
   }
 
   void _saveProfile(User currentUser) {
@@ -123,12 +88,20 @@ class _MeScreenState extends State<MeScreen> {
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
         homeAddress: _homeAddressController.text.trim(),
-        homeLat: _useCurrentLocation ? _currentLat : currentUser.homeLat,
-        homeLng: _useCurrentLocation ? _currentLng : currentUser.homeLng,
+        homeStreet: _homeStreetController.text.trim(),
+        homeCity: _homeCityController.text.trim(),
+        homeState: _homeStateController.text.trim(),
+        homeZip: _homeZipController.text.trim(),
+        homeLat: currentUser.homeLat,
+        homeLng: currentUser.homeLng,
         workAddress: _workAddressController.text.trim(),
+        workStreet: _workStreetController.text.trim(),
+        workCity: _workCityController.text.trim(),
+        workState: _workStateController.text.trim(),
+        workZip: _workZipController.text.trim(),
         workLat: currentUser.workLat,
         workLng: currentUser.workLng,
-        useCurrentLocation: _useCurrentLocation,
+        useCurrentLocation: currentUser.useCurrentLocation,
         // We might want to save current lat/lng to something specific if logic dictates,
         // but for now, rely on `useCurrentLocation` boolean for the backend flag.
       );
@@ -145,7 +118,23 @@ class _MeScreenState extends State<MeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is ProfileUpdateSuccess) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile saved successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else if (state is AuthFailure) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.error), backgroundColor: Colors.red),
+          );
+        }
+      },
       builder: (context, state) {
         if (state is AuthAuthenticated) {
           final user = state.user;
@@ -218,31 +207,32 @@ class _MeScreenState extends State<MeScreen> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _homeAddressController,
-                        decoration: const InputDecoration(
-                          labelText: 'Home Address',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.home),
-                        ),
+                      AddressInputAccordion(
+                        title: 'Home Address',
+                        icon: Icons.home,
+                        streetController: _homeStreetController,
+                        cityController: _homeCityController,
+                        stateController: _homeStateController,
+                        zipController: _homeZipController,
+                        initiallyExpanded:
+                            _homeStreetController.text.isNotEmpty ||
+                            _homeCityController.text.isNotEmpty ||
+                            _homeStateController.text.isNotEmpty ||
+                            _homeZipController.text.isNotEmpty,
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _workAddressController,
-                        decoration: const InputDecoration(
-                          labelText: 'Work Address',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.work),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      SwitchListTile(
-                        title: const Text('Use Current Location'),
-                        subtitle: const Text(
-                          'Allow the app to access your device location',
-                        ),
-                        value: _useCurrentLocation,
-                        onChanged: _handleCurrentLocationToggle,
+                      AddressInputAccordion(
+                        title: 'Work Address',
+                        icon: Icons.work,
+                        streetController: _workStreetController,
+                        cityController: _workCityController,
+                        stateController: _workStateController,
+                        zipController: _workZipController,
+                        initiallyExpanded:
+                            _workStreetController.text.isNotEmpty ||
+                            _workCityController.text.isNotEmpty ||
+                            _workStateController.text.isNotEmpty ||
+                            _workZipController.text.isNotEmpty,
                       ),
                       const SizedBox(height: 32),
                       SizedBox(

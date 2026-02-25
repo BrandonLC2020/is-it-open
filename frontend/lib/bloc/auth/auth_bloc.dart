@@ -71,6 +71,10 @@ class AuthAuthenticated extends AuthState {
   List<Object?> get props => [user];
 }
 
+class ProfileUpdateSuccess extends AuthAuthenticated {
+  const ProfileUpdateSuccess({required super.user});
+}
+
 class AuthUnauthenticated extends AuthState {}
 
 class AuthFailure extends AuthState {
@@ -201,7 +205,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               );
 
         await _saveUser(updatedUserWithToken);
-        emit(AuthAuthenticated(user: updatedUserWithToken));
+        emit(ProfileUpdateSuccess(user: updatedUserWithToken));
       } catch (e) {
         // Revert to the authenticated state with old user if it fails
         emit(AuthFailure(error: e.toString()));
