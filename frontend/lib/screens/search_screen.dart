@@ -62,7 +62,9 @@ class _SearchScreenState extends State<SearchScreen> {
                               ),
                               border: const OutlineInputBorder(),
                               filled: true,
-                              fillColor: Colors.white.withValues(alpha: 0.8),
+                              fillColor: Theme.of(
+                                context,
+                              ).cardColor.withValues(alpha: 0.9),
                             ),
                             textInputAction: TextInputAction.search,
                             onSubmitted: (_) => _performSearch(context),
@@ -94,7 +96,9 @@ class _SearchScreenState extends State<SearchScreen> {
                         itemBuilder: (context, index) {
                           final place = state.places[index];
                           return Card(
-                            color: Colors.white.withValues(alpha: 0.8),
+                            color: Theme.of(
+                              context,
+                            ).cardColor.withValues(alpha: 0.9),
                             margin: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 4,
@@ -116,10 +120,12 @@ class _SearchScreenState extends State<SearchScreen> {
                         },
                       );
                     }
-                    return const Center(
+                    return Center(
                       child: Text(
                         'Enter a query and press Search',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     );
                   },

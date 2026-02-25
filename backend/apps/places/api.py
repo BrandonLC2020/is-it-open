@@ -107,3 +107,16 @@ def create_place(request, payload: PlaceCreateSchema):
                     close_time=hour.close_time
                 )
     return place
+
+@router.post("/bookmark", response=SavedPlaceSchema)
+def bookmark_place(request, payload: SavePlaceInput):
+    place = get_object_or_404(Place, tomtom_id=payload.tomtom_id)
+    saved_place, created = SavedPlace.objects.get_or_create(
+        user=request.auth,
+        place=place,
+        defaults={"custom_name": payload.custom_name}
+    )
+    if not created and payload.custom_name:
+        saved_place.custom_name = payload.custom_name
+        saved_place.save()
+    return saved_place

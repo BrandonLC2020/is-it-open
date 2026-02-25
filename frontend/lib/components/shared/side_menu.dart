@@ -43,7 +43,7 @@ class SideMenu extends StatelessWidget {
               child: Text(
                 'Is It Open',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -57,31 +57,43 @@ class SideMenu extends StatelessWidget {
                 _buildNavItem(context, 1, 'Map', Icons.map),
                 _buildNavItem(context, 2, 'My Places', Icons.star),
                 _buildNavItem(context, 3, 'Me', Icons.person),
-                _buildNavItem(context, 4, 'Settings', Icons.settings),
               ],
             ),
           ),
-          Divider(color: Colors.white.withValues(alpha: 0.2)),
+          Divider(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.2),
+          ),
+          _buildNavItem(context, 4, 'Settings', Icons.settings),
           ListTile(
             leading: Icon(
               isDarkMode ? Icons.dark_mode : Icons.light_mode,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
-            title: const Text(
-              'Dark Mode',
-              style: TextStyle(color: Colors.white),
+            title: Text(
+              isDarkMode ? 'Dark Mode' : 'Light Mode',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
             trailing: Switch(
               value: isDarkMode,
               onChanged: (value) {
-                context.read<ThemeCubit>().toggleTheme();
+                context.read<ThemeCubit>().setTheme(
+                  value ? ThemeMode.dark : ThemeMode.light,
+                );
               },
               activeThumbColor: Theme.of(context).primaryColor,
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.logout, color: Colors.white),
-            title: const Text('Logout', style: TextStyle(color: Colors.white)),
+            leading: Icon(
+              Icons.logout,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            title: Text(
+              'Logout',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
             onTap: () {
               context.read<AuthBloc>().add(LogoutRequested());
             },
@@ -99,16 +111,19 @@ class SideMenu extends StatelessWidget {
     IconData icon,
   ) {
     final isSelected = selectedIndex == index;
+    final fgColor = Theme.of(context).colorScheme.onSurface;
+    final unselectedColor = fgColor.withValues(alpha: 0.7);
+
     return Container(
       color: isSelected
           ? Theme.of(context).primaryColor.withValues(alpha: 0.3)
           : Colors.transparent,
       child: ListTile(
-        leading: Icon(icon, color: isSelected ? Colors.white : Colors.white70),
+        leading: Icon(icon, color: isSelected ? fgColor : unselectedColor),
         title: Text(
           title,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white70,
+            color: isSelected ? fgColor : unselectedColor,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),

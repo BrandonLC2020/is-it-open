@@ -36,14 +36,16 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Stack(
         children: [
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF1A237E), // Deep Blue
-                  Color(0xFF0D47A1), // Blue
-                  Color(0xFF880E4F), // Pink/Purple accent
+                  const Color(0xFF1A237E).withOpacity(0.1), // Deep Blue
+                  const Color(0xFF0D47A1).withOpacity(0.1), // Blue
+                  const Color(
+                    0xFF880E4F,
+                  ).withOpacity(0.1), // Pink/Purple accent
                 ],
               ),
             ),

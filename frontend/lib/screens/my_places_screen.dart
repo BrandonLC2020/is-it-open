@@ -7,11 +7,14 @@ class MyPlacesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: const SafeArea(
+      body: SafeArea(
         child: Center(
           child: Text(
             'My Saved Places will appear here',
-            style: TextStyle(color: Colors.white, fontSize: 18),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 18,
+            ),
           ),
         ),
       ),

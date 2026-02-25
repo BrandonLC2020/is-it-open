@@ -19,12 +19,19 @@ class MeScreen extends StatelessWidget {
                   children: [
                     Text(
                       'Logged in as: ${state.user.username}',
-                      style: const TextStyle(color: Colors.white, fontSize: 18),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: 18,
+                      ),
                     ),
                     if (state.user.email != null)
                       Text(
                         'Email: ${state.user.email}',
-                        style: const TextStyle(color: Colors.white70),
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
                       ),
                     const SizedBox(height: 20),
                     ElevatedButton(

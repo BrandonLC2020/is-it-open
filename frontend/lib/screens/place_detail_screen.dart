@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:calendar_view/calendar_view.dart';
 import '../models/place.dart';
+import '../services/api_service.dart';
 
 class PlaceDetailScreen extends StatelessWidget {
   final Place place;
@@ -44,11 +46,23 @@ class PlaceDetailScreen extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Implement Save
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Saved to My Places!')));
+        onPressed: () async {
+          try {
+            final apiService = context.read<ApiService>();
+            await apiService.savePlace(place);
+            await apiService.bookmarkPlace(place.tomtomId);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Saved to My Places!')),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('Error saving place')));
+            }
+          }
         },
         child: const Icon(Icons.bookmark_add),
       ),

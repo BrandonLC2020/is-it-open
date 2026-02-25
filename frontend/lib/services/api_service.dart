@@ -99,7 +99,17 @@ class ApiService {
     }
   }
 
-  Future<void> bookmarkPlace(int placeId, {String? customName}) async {
-    // TODO: Implement
+  Future<void> bookmarkPlace(String tomtomId, {String? customName}) async {
+    try {
+      final Map<String, dynamic> data = {'tomtom_id': tomtomId};
+      if (customName != null && customName.isNotEmpty) {
+        data['custom_name'] = customName;
+      }
+      await _dio.post('/places/bookmark', data: data);
+    } on DioException catch (e) {
+      throw Exception(
+        'Failed to bookmark place: ${e.response?.data ?? e.message}',
+      );
+    }
   }
 }
