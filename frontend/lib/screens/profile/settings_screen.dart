@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
-import '../bloc/auth/auth_bloc.dart';
-import '../models/user.dart';
+import '../../bloc/auth/auth_bloc.dart';
+import '../../models/user.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});

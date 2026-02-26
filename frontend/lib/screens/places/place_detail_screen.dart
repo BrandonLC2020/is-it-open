@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:calendar_view/calendar_view.dart';
-import '../models/place.dart';
-import '../services/api_service.dart';
+import '../../models/place.dart';
+import '../../services/api_service.dart';
 
 class PlaceDetailScreen extends StatelessWidget {
   final Place place;

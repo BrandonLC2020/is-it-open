@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/auth/auth_bloc.dart';
-import '../models/user.dart';
-import '../components/shared/address_input_accordion.dart';
+import '../../bloc/auth/auth_bloc.dart';
+import '../../models/user.dart';
+import '../../components/shared/address_input_accordion.dart';
 
 class MeScreen extends StatefulWidget {
   const MeScreen({super.key});

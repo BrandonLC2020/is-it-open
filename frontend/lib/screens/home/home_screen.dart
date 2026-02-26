@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'search_screen.dart';
-import 'map_screen.dart';
-import 'my_places_screen.dart';
-import '../components/shared/side_menu.dart';
-import 'me_screen.dart';
-import 'settings_screen.dart';
+import 'package:frontend/screens/search/search_screen.dart';
+import 'package:frontend/screens/map/map_screen.dart';
+import 'package:frontend/screens/places/my_places_screen.dart';
+import '../../components/shared/side_menu.dart';
+import 'package:frontend/screens/profile/me_screen.dart';
+import 'package:frontend/screens/profile/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

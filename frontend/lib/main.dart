@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:calendar_view/calendar_view.dart';
-import 'screens/home_screen.dart';
-import 'screens/login_screen.dart';
+import 'package:frontend/screens/home/home_screen.dart';
+import 'package:frontend/screens/auth/login_screen.dart';
 import 'bloc/auth/auth_bloc.dart';
 import 'bloc/theme/theme_cubit.dart';
 import 'services/api_service.dart';
