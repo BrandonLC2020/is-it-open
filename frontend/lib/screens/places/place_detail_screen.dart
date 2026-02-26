@@ -9,8 +9,63 @@ class PlaceDetailScreen extends StatelessWidget {
 
   const PlaceDetailScreen({super.key, required this.place});
 
+  String _weekDayShortName(int weekday) {
+    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return names[weekday - 1];
+  }
+
+  EventController<Object?> _buildEventController() {
+    final controller = EventController<Object?>();
+    final now = DateTime.now();
+    // Monday is 1 in Dart, so subtracting `now.weekday - 1` gets us Monday
+    final startOfWeek = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
+
+    for (final hours in place.hours) {
+      final baseDate = startOfWeek.add(Duration(days: hours.dayOfWeek));
+      final startTime = DateTime(
+        baseDate.year,
+        baseDate.month,
+        baseDate.day,
+        hours.openTime.hour,
+        hours.openTime.minute,
+      );
+
+      var endTime = DateTime(
+        baseDate.year,
+        baseDate.month,
+        baseDate.day,
+        hours.closeTime.hour,
+        hours.closeTime.minute,
+      );
+
+      if (endTime.isBefore(startTime)) {
+        endTime = endTime.add(const Duration(days: 1));
+      }
+
+      controller.add(
+        CalendarEventData(
+          title: 'Open',
+          date: baseDate,
+          startTime: startTime,
+          endTime: endTime,
+          color: Colors.green.withOpacity(0.7),
+        ),
+      );
+    }
+
+    return controller;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black;
+    final textSmallColor = isDark ? Colors.white70 : Colors.black87;
+
     return Scaffold(
       appBar: AppBar(title: Text(place.name)),
       body: Column(
@@ -33,14 +88,70 @@ class PlaceDetailScreen extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: DayView(
-              controller:
-                  EventController(), // We need to populate this with hours
-              // For now, just showing the empty calendar view to integrity check dependencies
-              minDay: DateTime.now(),
+            child: WeekView(
+              controller: _buildEventController(),
+              minDay: DateTime.now().subtract(
+                Duration(days: DateTime.now().weekday - 1),
+              ),
               maxDay: DateTime.now().add(const Duration(days: 7)),
               initialDay: DateTime.now(),
               heightPerMinute: 1, // Compact view
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              headerStyle: HeaderStyle(
+                headerTextStyle: TextStyle(
+                  color:
+                      Theme.of(context).textTheme.bodyLarge?.color ?? textColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                ),
+              ),
+              hourIndicatorSettings: HourIndicatorSettings(
+                color: Theme.of(context).dividerColor,
+              ),
+              liveTimeIndicatorSettings: LiveTimeIndicatorSettings(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              timeLineBuilder: (date) => Center(
+                child: Text(
+                  "${date.hour.toString().padLeft(2, '0')}:00",
+                  style: TextStyle(
+                    color:
+                        Theme.of(context).textTheme.bodySmall?.color ??
+                        textSmallColor,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              weekDayBuilder: (date) => Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _weekDayShortName(date.weekday),
+                      style: TextStyle(
+                        color:
+                            Theme.of(context).textTheme.bodySmall?.color ??
+                            textSmallColor,
+                        fontSize: 12,
+                      ),
+                    ),
+                    Text(
+                      date.day.toString(),
+                      style: TextStyle(
+                        color:
+                            Theme.of(context).textTheme.bodyLarge?.color ??
+                            textColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
