@@ -100,3 +100,31 @@ class TomTomClient:
     def get_place_details(self, tomtom_id):
         # We can implement this later if needed, but search covers it.
         pass
+
+    def geocode_address(self, address: str):
+        """
+        Geocode an address string using TomTom Search API.
+        Returns a dict with 'lat' and 'lon' keys, or None if not found or error.
+        """
+        if not self.api_key or not address:
+            return None
+
+        url = f"{self.BASE_URL}/geocode/{address}.json"
+        params = {
+            "key": self.api_key,
+            "limit": 1
+        }
+        try:
+            response = requests.get(url, params=params, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            results = data.get('results', [])
+            if results:
+                position = results[0].get('position', {})
+                lat = position.get('lat')
+                lon = position.get('lon')
+                if lat is not None and lon is not None:
+                    return {'lat': lat, 'lon': lon}
+        except requests.RequestException:
+            pass
+        return None

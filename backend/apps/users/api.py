@@ -180,12 +180,14 @@ class ProfileUpdateInput(Schema):
 
 @router.put("/me", response=AuthOutput, auth=GlobalAuth())
 def update_me(request, data: ProfileUpdateInput):
+    from services.tomtom import TomTomClient # Import locally to avoid circular imports if any, though likely fine at top
+
     if not request.user.is_authenticated:
         raise HttpError(401, "Unauthorized")
     
     user = request.user
     
-    # Update User fields if provided
+    # ... (User update logic remains the same)
     user_updated = False
     if data.first_name is not None:
         user.first_name = data.first_name
@@ -203,55 +205,100 @@ def update_me(request, data: ProfileUpdateInput):
         
     profile = user.profile
     
+    # We will track if address fields changed to determine if we need to geocode
+    home_address_changed = False
+    work_address_changed = False
+
     # Update UserProfile fields if provided
     profile_updated = False
     if data.home_address is not None:
         profile.home_address = data.home_address
         profile_updated = True
+        home_address_changed = True
     if data.home_street is not None:
         profile.home_street = data.home_street
         profile_updated = True
+        home_address_changed = True
     if data.home_city is not None:
         profile.home_city = data.home_city
         profile_updated = True
+        home_address_changed = True
     if data.home_state is not None:
         profile.home_state = data.home_state
         profile_updated = True
+        home_address_changed = True
     if data.home_zip is not None:
         profile.home_zip = data.home_zip
         profile_updated = True
+        home_address_changed = True
+        
+    # Allow explicit lat/lng overrides from frontend
     if data.home_lat is not None:
         profile.home_lat = data.home_lat
         profile_updated = True
+        home_address_changed = False # Don't re-geocode if explicitly provided
     if data.home_lng is not None:
         profile.home_lng = data.home_lng
         profile_updated = True
-        
+        home_address_changed = False
+
     if data.work_address is not None:
         profile.work_address = data.work_address
         profile_updated = True
+        work_address_changed = True
     if data.work_street is not None:
         profile.work_street = data.work_street
         profile_updated = True
+        work_address_changed = True
     if data.work_city is not None:
         profile.work_city = data.work_city
         profile_updated = True
+        work_address_changed = True
     if data.work_state is not None:
         profile.work_state = data.work_state
         profile_updated = True
+        work_address_changed = True
     if data.work_zip is not None:
         profile.work_zip = data.work_zip
         profile_updated = True
+        work_address_changed = True
+        
     if data.work_lat is not None:
         profile.work_lat = data.work_lat
         profile_updated = True
+        work_address_changed = False
     if data.work_lng is not None:
         profile.work_lng = data.work_lng
         profile_updated = True
+        work_address_changed = False
         
     if data.use_current_location is not None:
         profile.use_current_location = data.use_current_location
         profile_updated = True
+
+    # Perform geocoding if needed
+    if home_address_changed or work_address_changed:
+        client = TomTomClient()
+        
+        if home_address_changed:
+            address_parts = [p for p in [profile.home_street, profile.home_city, profile.home_state, profile.home_zip] if p]
+            full_address = ", ".join(address_parts)
+            if full_address:
+                coords = client.geocode_address(full_address)
+                if coords:
+                    profile.home_lat = coords['lat']
+                    profile.home_lng = coords['lon']
+                    profile_updated = True
+
+        if work_address_changed:
+            address_parts = [p for p in [profile.work_street, profile.work_city, profile.work_state, profile.work_zip] if p]
+            full_address = ", ".join(address_parts)
+            if full_address:
+                coords = client.geocode_address(full_address)
+                if coords:
+                    profile.work_lat = coords['lat']
+                    profile.work_lng = coords['lon']
+                    profile_updated = True
         
     if profile_updated:
         profile.save()
