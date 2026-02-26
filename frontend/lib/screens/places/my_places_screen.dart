@@ -112,7 +112,7 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
                               gridDelegate:
                                   const SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: 2,
-                                    childAspectRatio: 0.85,
+                                    mainAxisExtent: 140,
                                     crossAxisSpacing: 8,
                                     mainAxisSpacing: 8,
                                   ),
@@ -160,7 +160,7 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
                               gridDelegate:
                                   const SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: 2,
-                                    childAspectRatio: 0.85,
+                                    mainAxisExtent: 140,
                                     crossAxisSpacing: 8,
                                     mainAxisSpacing: 8,
                                   ),
