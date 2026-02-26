@@ -136,6 +136,17 @@ class ApiService {
     }
   }
 
+  Future<User> getProfile() async {
+    try {
+      final response = await _dio.get('/auth/me');
+      return User.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        'Failed to get profile: ${e.response?.data ?? e.message}',
+      );
+    }
+  }
+
   Future<User> updateProfile(User user) async {
     try {
       final response = await _dio.put('/auth/me', data: user.toJson());

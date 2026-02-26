@@ -13,6 +13,7 @@ class MeScreen extends StatefulWidget {
 
 class _MeScreenState extends State<MeScreen> {
   final _formKey = GlobalKey<FormState>();
+  bool _isInitialized = false;
 
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
@@ -26,6 +27,8 @@ class _MeScreenState extends State<MeScreen> {
   late TextEditingController _workCityController;
   late TextEditingController _workStateController;
   late TextEditingController _workZipController;
+
+  User? _currentUser;
 
   @override
   void initState() {
@@ -46,20 +49,25 @@ class _MeScreenState extends State<MeScreen> {
     // Initialize controllers with current user data if available
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
-      final user = authState.user;
-      _firstNameController.text = user.firstName ?? '';
-      _lastNameController.text = user.lastName ?? '';
-      _homeAddressController.text = user.homeAddress ?? '';
-      _homeStreetController.text = user.homeStreet ?? '';
-      _homeCityController.text = user.homeCity ?? '';
-      _homeStateController.text = user.homeState ?? '';
-      _homeZipController.text = user.homeZip ?? '';
-      _workAddressController.text = user.workAddress ?? '';
-      _workStreetController.text = user.workStreet ?? '';
-      _workCityController.text = user.workCity ?? '';
-      _workStateController.text = user.workState ?? '';
-      _workZipController.text = user.workZip ?? '';
+      _currentUser = authState.user;
+      _populateFields(authState.user);
     }
+  }
+
+  void _populateFields(User user) {
+    _firstNameController.text = user.firstName ?? '';
+    _lastNameController.text = user.lastName ?? '';
+    _homeAddressController.text = user.homeAddress ?? '';
+    _homeStreetController.text = user.homeStreet ?? '';
+    _homeCityController.text = user.homeCity ?? '';
+    _homeStateController.text = user.homeState ?? '';
+    _homeZipController.text = user.homeZip ?? '';
+    _workAddressController.text = user.workAddress ?? '';
+    _workStreetController.text = user.workStreet ?? '';
+    _workCityController.text = user.workCity ?? '';
+    _workStateController.text = user.workState ?? '';
+    _workZipController.text = user.workZip ?? '';
+    _isInitialized = true;
   }
 
   @override
@@ -102,8 +110,6 @@ class _MeScreenState extends State<MeScreen> {
         workLat: currentUser.workLat,
         workLng: currentUser.workLng,
         useCurrentLocation: currentUser.useCurrentLocation,
-        // We might want to save current lat/lng to something specific if logic dictates,
-        // but for now, rely on `useCurrentLocation` boolean for the backend flag.
       );
 
       context.read<AuthBloc>().add(
@@ -120,6 +126,12 @@ class _MeScreenState extends State<MeScreen> {
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          _currentUser = state.user;
+          if (!_isInitialized) {
+            _populateFields(state.user);
+          }
+        }
         if (state is ProfileUpdateSuccess) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -127,6 +139,11 @@ class _MeScreenState extends State<MeScreen> {
               content: Text('Profile saved successfully!'),
               backgroundColor: Colors.green,
             ),
+          );
+        } else if (state is ProfileUpdateFailure) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.error), backgroundColor: Colors.red),
           );
         } else if (state is AuthFailure) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -136,8 +153,8 @@ class _MeScreenState extends State<MeScreen> {
         }
       },
       builder: (context, state) {
-        if (state is AuthAuthenticated) {
-          final user = state.user;
+        if (_currentUser != null) {
+          final user = _currentUser!;
           return Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
@@ -239,8 +256,18 @@ class _MeScreenState extends State<MeScreen> {
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: () => _saveProfile(user),
-                          child: const Text('Save Profile'),
+                          onPressed: state is AuthLoading
+                              ? null
+                              : () => _saveProfile(user),
+                          child: state is AuthLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text('Save Profile'),
                         ),
                       ),
                       const SizedBox(height: 32),

@@ -38,6 +38,18 @@ class MyApp extends StatelessWidget {
                 darkTheme: AppTheme.darkTheme,
                 themeMode: themeMode,
                 home: BlocBuilder<AuthBloc, AuthState>(
+                  buildWhen: (previous, current) {
+                    if (current is AuthInitial) return true;
+                    if (current is AuthLoading) return false;
+
+                    bool wasAuth = previous is AuthAuthenticated;
+                    bool isAuth = current is AuthAuthenticated;
+
+                    if (wasAuth != isAuth) return true;
+                    if (current is AuthFailure) return true;
+
+                    return false;
+                  },
                   builder: (context, state) {
                     if (state is AuthAuthenticated) {
                       return const HomeScreen();
