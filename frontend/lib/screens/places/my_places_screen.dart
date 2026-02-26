@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../services/api_service.dart';
 import '../../../models/saved_place.dart';
-import '../../../components/places/saved_place_card.dart';
+import '../../../components/places/saved_place_list_card.dart';
 
 class MyPlacesScreen extends StatefulWidget {
   const MyPlacesScreen({super.key});
@@ -79,7 +79,7 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
                 itemCount: places.length,
                 itemBuilder: (context, index) {
                   final savedPlace = places[index];
-                  return SavedPlaceCard(
+                  return SavedPlaceListCard(
                     savedPlace: savedPlace,
                     onRefresh: _refreshBookmarks,
                   );

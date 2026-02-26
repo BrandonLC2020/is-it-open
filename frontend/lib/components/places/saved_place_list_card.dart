@@ -5,11 +5,11 @@ import '../../../services/api_service.dart';
 import '../shared/glass_container.dart';
 import '../../screens/places/place_detail_screen.dart';
 
-class SavedPlaceCard extends StatelessWidget {
+class SavedPlaceListCard extends StatelessWidget {
   final SavedPlace savedPlace;
   final VoidCallback onRefresh;
 
-  const SavedPlaceCard({
+  const SavedPlaceListCard({
     super.key,
     required this.savedPlace,
     required this.onRefresh,

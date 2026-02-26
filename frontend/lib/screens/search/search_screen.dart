@@ -6,7 +6,7 @@ import '../../../bloc/search/search_event.dart';
 import '../../../bloc/search/search_state.dart';
 
 import 'package:frontend/screens/places/create_place_screen.dart';
-import '../../components/search/search_result_card.dart';
+import '../../components/search/search_result_list_card.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -135,7 +135,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             );
                           }
                           final place = state.places[index];
-                          return SearchResultCard(place: place);
+                          return SearchResultListCard(place: place);
                         },
                       );
                     }

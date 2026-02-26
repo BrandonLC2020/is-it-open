@@ -3,10 +3,10 @@ import '../../models/place.dart';
 import '../shared/glass_container.dart';
 import '../../screens/places/place_detail_screen.dart';
 
-class SearchResultCard extends StatelessWidget {
+class SearchResultListCard extends StatelessWidget {
   final Place place;
 
-  const SearchResultCard({super.key, required this.place});
+  const SearchResultListCard({super.key, required this.place});
 
   @override
   Widget build(BuildContext context) {
