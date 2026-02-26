@@ -84,36 +84,113 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
             }
 
             final places = snapshot.data!;
+            final pinnedPlaces = places.where((p) => p.isPinned).toList();
+            final unpinnedPlaces = places.where((p) => !p.isPinned).toList();
+
             return RefreshIndicator(
               onRefresh: _refreshBookmarks,
-              child: _isGridView
-                  ? GridView.builder(
-                      padding: const EdgeInsets.all(8),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 0.85,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
+              child: CustomScrollView(
+                slivers: [
+                  if (pinnedPlaces.isNotEmpty) ...[
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      sliver: SliverToBoxAdapter(
+                        child: Text(
+                          'Pinned',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                           ),
-                      itemCount: places.length,
-                      itemBuilder: (context, index) {
-                        return SavedPlaceGridCard(
-                          savedPlace: places[index],
-                          onRefresh: _refreshBookmarks,
-                        );
-                      },
-                    )
-                  : ListView.builder(
-                      itemCount: places.length,
-                      itemBuilder: (context, index) {
-                        final savedPlace = places[index];
-                        return SavedPlaceListCard(
-                          savedPlace: savedPlace,
-                          onRefresh: _refreshBookmarks,
-                        );
-                      },
+                        ),
+                      ),
                     ),
+                    _isGridView
+                        ? SliverPadding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            sliver: SliverGrid(
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    childAspectRatio: 0.85,
+                                    crossAxisSpacing: 8,
+                                    mainAxisSpacing: 8,
+                                  ),
+                              delegate: SliverChildBuilderDelegate((
+                                context,
+                                index,
+                              ) {
+                                return SavedPlaceGridCard(
+                                  savedPlace: pinnedPlaces[index],
+                                  onRefresh: _refreshBookmarks,
+                                );
+                              }, childCount: pinnedPlaces.length),
+                            ),
+                          )
+                        : SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              return SavedPlaceListCard(
+                                savedPlace: pinnedPlaces[index],
+                                onRefresh: _refreshBookmarks,
+                              );
+                            }, childCount: pinnedPlaces.length),
+                          ),
+                  ],
+                  if (unpinnedPlaces.isNotEmpty) ...[
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      sliver: SliverToBoxAdapter(
+                        child: Text(
+                          'Saved Places',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    _isGridView
+                        ? SliverPadding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            sliver: SliverGrid(
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    childAspectRatio: 0.85,
+                                    crossAxisSpacing: 8,
+                                    mainAxisSpacing: 8,
+                                  ),
+                              delegate: SliverChildBuilderDelegate((
+                                context,
+                                index,
+                              ) {
+                                return SavedPlaceGridCard(
+                                  savedPlace: unpinnedPlaces[index],
+                                  onRefresh: _refreshBookmarks,
+                                );
+                              }, childCount: unpinnedPlaces.length),
+                            ),
+                          )
+                        : SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              return SavedPlaceListCard(
+                                savedPlace: unpinnedPlaces[index],
+                                onRefresh: _refreshBookmarks,
+                              );
+                            }, childCount: unpinnedPlaces.length),
+                          ),
+                  ],
+                  // Added bottom padding
+                  const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
+                ],
+              ),
             );
           },
         ),

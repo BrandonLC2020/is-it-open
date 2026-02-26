@@ -47,6 +47,10 @@ class SavedPlaceSchema(Schema):
     id: int
     place: PlaceSchema
     custom_name: Optional[str] = None
+    is_pinned: bool
+
+class TogglePinInput(Schema):
+    is_pinned: bool
 
 class SavePlaceInput(Schema):
     tomtom_id: str
@@ -126,6 +130,14 @@ def delete_bookmark(request, tomtom_id: str):
     if deleted:
         return 204, None
     return 404, {"detail": "Bookmark not found"}
+
+@router.patch("/bookmarks/{tomtom_id}/pin", response=SavedPlaceSchema)
+def toggle_pin(request, tomtom_id: str, payload: TogglePinInput):
+    place = get_object_or_404(Place, tomtom_id=tomtom_id)
+    saved_place = get_object_or_404(SavedPlace, user=request.auth, place=place)
+    saved_place.is_pinned = payload.is_pinned
+    saved_place.save()
+    return saved_place
 
 @router.get("/{tomtom_id}", response=PlaceSchema)
 def get_place_details(request, tomtom_id: str):

@@ -15,6 +15,7 @@ class SavedPlace(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='saved_places')
     place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name='saved_by')
     custom_name = models.CharField(max_length=255, blank=True, null=True)
+    is_pinned = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -146,4 +146,17 @@ class ApiService {
       );
     }
   }
+
+  Future<void> togglePinPlace(String tomtomId, bool isPinned) async {
+    try {
+      await _dio.patch(
+        '/places/bookmarks/$tomtomId/pin',
+        data: {'is_pinned': isPinned},
+      );
+    } on DioException catch (e) {
+      throw Exception(
+        'Failed to toggle pin for place: ${e.response?.data ?? e.message}',
+      );
+    }
+  }
 }

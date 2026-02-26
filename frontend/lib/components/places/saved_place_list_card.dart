@@ -38,28 +38,58 @@ class SavedPlaceListCard extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline),
-          color: Theme.of(context).colorScheme.error,
-          onPressed: () async {
-            try {
-              await context.read<ApiService>().deleteBookmark(
-                savedPlace.place.tomtomId,
-              );
-              onRefresh();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Place removed from bookmarks')),
-                );
-              }
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to remove place: $e')),
-                );
-              }
-            }
-          },
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(
+                savedPlace.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+              ),
+              color: savedPlace.isPinned
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+              onPressed: () async {
+                try {
+                  await context.read<ApiService>().togglePinPlace(
+                    savedPlace.place.tomtomId,
+                    !savedPlace.isPinned,
+                  );
+                  onRefresh();
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to pin place: $e')),
+                    );
+                  }
+                }
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              color: Theme.of(context).colorScheme.error,
+              onPressed: () async {
+                try {
+                  await context.read<ApiService>().deleteBookmark(
+                    savedPlace.place.tomtomId,
+                  );
+                  onRefresh();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Place removed from bookmarks'),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to remove place: $e')),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
         ),
         onTap: () {
           Navigator.push(
