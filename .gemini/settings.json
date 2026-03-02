@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "name": "backend-health",
+        "type": "command",
+        "command": "python3 $GEMINI_PROJECT_DIR/.gemini/hooks/backend-health.py"
+      },
+      {
+        "name": "flutter-env",
+        "type": "command",
+        "command": "python3 $GEMINI_PROJECT_DIR/.gemini/hooks/flutter-env.py"
+      },
+      {
+        "name": "db-schema-summary",
+        "type": "command",
+        "command": "python3 $GEMINI_PROJECT_DIR/.gemini/hooks/db-schema-summary.py"
+      },
+      {
+        "name": "api-routes",
+        "type": "command",
+        "command": "python3 $GEMINI_PROJECT_DIR/.gemini/hooks/api-routes.py"
+      }
+    ]
+  }
+}
