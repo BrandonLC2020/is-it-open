@@ -4,6 +4,7 @@ import '../../../models/saved_place.dart';
 import '../../../services/api_service.dart';
 import '../shared/glass_container.dart';
 import '../../screens/places/place_detail_screen.dart';
+import '../../../utils/graphics_helper.dart';
 
 class SavedPlaceListCard extends StatelessWidget {
   final SavedPlace savedPlace;
@@ -25,6 +26,7 @@ class SavedPlaceListCard extends StatelessWidget {
       color: isDarkTheme ? Colors.black : Colors.white,
       opacity: isDarkTheme ? 0.3 : 0.7,
       child: ListTile(
+        leading: GraphicsHelper.buildProfileGraphic(savedPlace),
         title: Text(
           savedPlace.customName ?? savedPlace.place.name,
           style: TextStyle(

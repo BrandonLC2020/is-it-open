@@ -4,12 +4,16 @@ class SavedPlace {
   final int id;
   final Place place;
   final String? customName;
+  final String? icon;
+  final String? color;
   final bool isPinned;
 
   SavedPlace({
     required this.id,
     required this.place,
     this.customName,
+    this.icon,
+    this.color,
     this.isPinned = false,
   });
 
@@ -18,6 +22,8 @@ class SavedPlace {
       id: json['id'],
       place: Place.fromJson(json['place']),
       customName: json['custom_name'],
+      icon: json['icon'],
+      color: json['color'],
       isPinned: json['is_pinned'] ?? false,
     );
   }
@@ -27,6 +33,8 @@ class SavedPlace {
       'id': id,
       'place': place.toJson(),
       'custom_name': customName,
+      'icon': icon,
+      'color': color,
       'is_pinned': isPinned,
     };
   }

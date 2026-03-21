@@ -4,6 +4,7 @@ import '../../../models/saved_place.dart';
 import '../../../services/api_service.dart';
 import '../shared/glass_container.dart';
 import '../../screens/places/place_detail_screen.dart';
+import '../../../utils/graphics_helper.dart';
 
 class SavedPlaceGridCard extends StatelessWidget {
   final SavedPlace savedPlace;
@@ -46,15 +47,23 @@ class SavedPlaceGridCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      savedPlace.customName ?? savedPlace.place.name,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        GraphicsHelper.buildProfileGraphic(savedPlace, size: 32),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            savedPlace.customName ?? savedPlace.place.name,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Text(
