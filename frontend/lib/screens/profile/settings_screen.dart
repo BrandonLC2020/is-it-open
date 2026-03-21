@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../bloc/auth/auth_bloc.dart';
+import '../../bloc/preferences/preferences_cubit.dart';
 import '../../models/user.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -175,6 +176,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       padding: EdgeInsets.all(16.0),
                       child: Center(child: CircularProgressIndicator()),
                     ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'App Preferences',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  BlocBuilder<PreferencesCubit, PreferencesState>(
+                    builder: (context, prefsState) {
+                      return SwitchListTile(
+                        title: const Text('Use 24-Hour Time'),
+                        subtitle: const Text(
+                          'Display time in 24-hour format (e.g. 13:00)',
+                        ),
+                        value: prefsState.use24HourFormat,
+                        onChanged: (value) {
+                          context.read<PreferencesCubit>().toggle24HourFormat(value);
+                        },
+                      );
+                    },
+                  ),
                 ],
               ),
             ),

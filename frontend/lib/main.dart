@@ -5,6 +5,7 @@ import 'package:frontend/screens/home/home_screen.dart';
 import 'package:frontend/screens/auth/login_screen.dart';
 import 'bloc/auth/auth_bloc.dart';
 import 'bloc/theme/theme_cubit.dart';
+import 'bloc/preferences/preferences_cubit.dart';
 import 'services/api_service.dart';
 import 'utils/app_theme.dart';
 
@@ -27,6 +28,7 @@ class MyApp extends StatelessWidget {
                   ..add(AppStarted()),
           ),
           BlocProvider<ThemeCubit>(create: (context) => ThemeCubit()),
+          BlocProvider<PreferencesCubit>(create: (context) => PreferencesCubit()),
         ],
         child: CalendarControllerProvider(
           controller: EventController(),

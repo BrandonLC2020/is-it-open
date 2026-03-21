@@ -5,6 +5,8 @@ import 'package:flutter_map/flutter_map.dart';
 import '../../models/place.dart';
 import '../../models/saved_place.dart';
 import '../../services/api_service.dart';
+import '../../bloc/preferences/preferences_cubit.dart';
+import 'package:intl/intl.dart';
 
 class PlaceDetailScreen extends StatefulWidget {
   final Place place;
@@ -522,7 +524,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     );
   }
 
-  Widget _buildCalendar(Color textColor, Color textSmallColor) {
+  Widget _buildCalendar(Color textColor, Color textSmallColor, bool use24HourFormat) {
     List<WeekDays> weekDays = WeekDays.values;
     int daysToAdvance = 7;
     String headerText = "";
@@ -565,15 +567,20 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         liveTimeIndicatorSettings: LiveTimeIndicatorSettings(
           color: Theme.of(context).colorScheme.primary,
         ),
-        timeLineBuilder: (date) => Center(
-          child: Text(
-            "${date.hour.toString().padLeft(2, '0')}:00",
-            style: TextStyle(
-              color: Theme.of(context).textTheme.bodySmall?.color ?? textSmallColor,
-              fontSize: 12,
+        timeLineBuilder: (date) {
+          final timeString = use24HourFormat
+              ? "${date.hour.toString().padLeft(2, '0')}:00"
+              : DateFormat('h a').format(DateTime(date.year, date.month, date.day, date.hour));
+          return Center(
+            child: Text(
+              timeString,
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodySmall?.color ?? textSmallColor,
+                fontSize: 12,
+              ),
             ),
-          ),
-        ),
+          );
+        },
       );
     } else {
       calendarWidget = WeekView(
@@ -597,15 +604,20 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         liveTimeIndicatorSettings: LiveTimeIndicatorSettings(
           color: Theme.of(context).colorScheme.primary,
         ),
-        timeLineBuilder: (date) => Center(
-          child: Text(
-            "${date.hour.toString().padLeft(2, '0')}:00",
-            style: TextStyle(
-              color: Theme.of(context).textTheme.bodySmall?.color ?? textSmallColor,
-              fontSize: 12,
+        timeLineBuilder: (date) {
+          final timeString = use24HourFormat
+              ? "${date.hour.toString().padLeft(2, '0')}:00"
+              : DateFormat('h a').format(DateTime(date.year, date.month, date.day, date.hour));
+          return Center(
+            child: Text(
+              timeString,
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodySmall?.color ?? textSmallColor,
+                fontSize: 12,
+              ),
             ),
-          ),
-        ),
+          );
+        },
         weekDayBuilder: (date) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -677,6 +689,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black;
     final textSmallColor = isDark ? Colors.white70 : Colors.black87;
+    final use24HourFormat = context.watch<PreferencesCubit>().state.use24HourFormat;
 
     return Scaffold(
       appBar: AppBar(
@@ -736,7 +749,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                   child: _buildCalendarOptions(),
                 ),
                 Expanded(
-                  child: _buildCalendar(textColor, textSmallColor),
+                  child: _buildCalendar(textColor, textSmallColor, use24HourFormat),
                 ),
               ],
             ),
