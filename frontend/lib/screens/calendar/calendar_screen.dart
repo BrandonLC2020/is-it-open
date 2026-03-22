@@ -235,12 +235,35 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  // ── Date formatting helpers ────────────────────────────────────
+  String _formatHeaderDate(DateTime date) {
+    return DateFormat('MMM d').format(date);
+  }
+
+  String _buildHeaderText() {
+    if (_currentView == CalendarViewType.singleDay) {
+      return DateFormat('EEEE, MMM d, yyyy').format(_baseDate);
+    } else if (_currentView == CalendarViewType.threeDay) {
+      final endDate = _baseDate.add(const Duration(days: 2));
+      if (_baseDate.month == endDate.month) {
+        return '${_formatHeaderDate(_baseDate)} – ${endDate.day}, ${DateFormat('yyyy').format(endDate)}';
+      }
+      return '${_formatHeaderDate(_baseDate)} – ${_formatHeaderDate(endDate)}, ${DateFormat('yyyy').format(endDate)}';
+    } else {
+      // Week view: show Mon – Sun range
+      final weekStart = _baseDate.subtract(Duration(days: _baseDate.weekday - 1));
+      final weekEnd = weekStart.add(const Duration(days: 6));
+      if (weekStart.month == weekEnd.month) {
+        return '${_formatHeaderDate(weekStart)} – ${weekEnd.day}, ${DateFormat('yyyy').format(weekEnd)}';
+      }
+      return '${_formatHeaderDate(weekStart)} – ${_formatHeaderDate(weekEnd)}, ${DateFormat('yyyy').format(weekEnd)}';
+    }
+  }
+
   // ── Calendar widget ───────────────────────────────────────────
   Widget _buildCalendar(Color textColor, Color textSmallColor, bool use24HourFormat) {
     List<WeekDays> weekDays = WeekDays.values;
-    String headerText = "";
     int daysToAdvance = 0;
-    bool showNavigation = true;
 
     if (_currentView == CalendarViewType.threeDay) {
       daysToAdvance = 3;
@@ -249,18 +272,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
         WeekDays.values[_baseDate.add(const Duration(days: 1)).weekday - 1],
         WeekDays.values[_baseDate.add(const Duration(days: 2)).weekday - 1],
       ];
-      headerText = "3-Day Schedule";
     } else if (_currentView == CalendarViewType.singleDay) {
       daysToAdvance = 1;
-      headerText = "Daily Schedule";
     } else {
       daysToAdvance = 7;
-      headerText = "Weekly Schedule";
-      showNavigation = false;
     }
 
     final now = DateTime.now();
     final initialScrollOffset = (now.hour * 60.0 + now.minute) * 1.0;
+    final isShowingToday = DateUtils.isSameDay(_baseDate, now) ||
+        (_currentView == CalendarViewType.week &&
+            _baseDate.subtract(Duration(days: _baseDate.weekday - 1)).isBefore(now) &&
+            _baseDate.subtract(Duration(days: _baseDate.weekday - 1)).add(const Duration(days: 7)).isAfter(now));
 
     Widget calendarWidget;
     if (_currentView == CalendarViewType.singleDay) {
@@ -339,13 +362,26 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
                     )
                   : null,
-              child: Text(
-                _weekDayShortName(date.weekday),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _weekDayShortName(date.weekday),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '${date.month}/${date.day}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -356,39 +392,38 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              if (showNavigation)
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () {
-                    setState(() {
-                      _baseDate = _baseDate.subtract(Duration(days: daysToAdvance));
-                    });
-                  },
-                )
-              else
-                const SizedBox(width: 48),
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                onPressed: () {
+                  setState(() {
+                    _baseDate = _baseDate.subtract(Duration(days: daysToAdvance));
+                  });
+                },
+              ),
               Expanded(
                 child: Text(
-                  headerText,
+                  _buildHeaderText(),
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
-              if (showNavigation)
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: () {
-                    setState(() {
-                      _baseDate = _baseDate.add(Duration(days: daysToAdvance));
-                    });
-                  },
-                )
-              else
-                const SizedBox(width: 48),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                onPressed: () {
+                  setState(() {
+                    _baseDate = _baseDate.add(Duration(days: daysToAdvance));
+                  });
+                },
+              ),
+              if (!isShowingToday)
+                TextButton.icon(
+                  onPressed: () => setState(() => _baseDate = DateTime.now()),
+                  icon: const Icon(Icons.today, size: 18),
+                  label: const Text('Today'),
+                ),
             ],
           ),
         ),
