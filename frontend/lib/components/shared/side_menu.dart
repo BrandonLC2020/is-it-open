@@ -54,10 +54,10 @@ class SideMenu extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                _buildNavItem(context, 0, 'Search', Icons.search),
-                _buildNavItem(context, 1, 'Map', Icons.map),
-                _buildNavItem(context, 2, 'My Places', Icons.star),
-                _buildNavItem(context, 3, 'Calendar', Icons.calendar_month),
+                _buildNavItem(context, 0, 'My Places', Icons.star),
+                _buildNavItem(context, 1, 'Calendar', Icons.calendar_month),
+                _buildNavItem(context, 2, 'Map', Icons.map),
+                _buildNavItem(context, 3, 'Search', Icons.search),
                 _buildNavItem(context, 4, 'Me', Icons.person),
               ],
             ),

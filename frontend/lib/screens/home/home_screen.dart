@@ -18,10 +18,10 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   static const List<Widget> _widgetOptions = <Widget>[
-    SearchScreen(),
-    MapScreen(),
     MyPlacesScreen(),
     CalendarScreen(),
+    MapScreen(),
+    SearchScreen(),
     MeScreen(),
   ];
 
@@ -82,10 +82,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                   elevation: 8,
                   items: const [
-                    BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-                    BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
                     BottomNavigationBarItem(icon: Icon(Icons.star), label: 'Places'),
                     BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: 'Calendar'),
+                    BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
+                    BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
                     BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
                   ],
                 )
