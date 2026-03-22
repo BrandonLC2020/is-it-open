@@ -927,6 +927,118 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final textColor = isDark ? Colors.white : Colors.black;
     final textSmallColor = isDark ? Colors.white70 : Colors.black87;
     final use24HourFormat = context.watch<PreferencesCubit>().state.use24HourFormat;
+    final isMobile = MediaQuery.of(context).size.width < 800;
+
+    Widget sidebarContent = ListView(
+      children: [
+        // Section: My Places
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            children: [
+              Text(
+                'My Places',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 18),
+                onPressed: () {
+                  setState(() => _isLoadingPlaces = true);
+                  _loadSavedPlaces();
+                },
+              ),
+            ],
+          ),
+        ),
+        _buildPlacesSidebar(),
+        const Divider(),
+        // Section: Device Calendars
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Row(
+            children: [
+              Text(
+                'Device Calendars',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const Spacer(),
+              if (_hasCalendarPermission)
+                IconButton(
+                  icon: const Icon(Icons.sync, size: 18),
+                  onPressed: _loadDeviceCalendars,
+                ),
+            ],
+          ),
+        ),
+        _buildDeviceCalendarsSidebar(),
+        const Divider(),
+        // Section: Remote Subscription
+        _buildRemoteSubscriptionSidebar(),
+        const Divider(),
+        // Section: Imported Calendars
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Row(
+            children: [
+              Text(
+                'Imported Events',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const Spacer(),
+              if (_importedEvents.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  onPressed: () => setState(() {
+                    _importedEvents = [];
+                    _persistImportedEvents();
+                  }),
+                  tooltip: 'Clear Imported',
+                ),
+              IconButton(
+                icon: _isImporting 
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.file_upload, size: 18),
+                onPressed: _isImporting ? null : _importIcalFile,
+                tooltip: 'Import .ics file',
+              ),
+            ],
+          ),
+        ),
+        if (_importedEvents.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'No events imported. Upload a .ics file to see external events.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Text(
+              'Displaying ${_importedEvents.length} imported events.',
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+      ],
+    );
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -939,132 +1051,33 @@ class _CalendarScreenState extends State<CalendarScreen> {
             padding: const EdgeInsets.only(right: 8.0),
             child: _buildCalendarOptions(),
           ),
+          if (isMobile)
+            Builder(
+              builder: (context) => IconButton(
+                icon: const Icon(Icons.filter_list),
+                onPressed: () => Scaffold.of(context).openEndDrawer(),
+              ),
+            ),
         ],
       ),
-      body: Row(
-        children: [
-          // ── Calendar view (left 2/3) ──
-          Expanded(
-            flex: 2,
-            child: _buildCalendar(textColor, textSmallColor, use24HourFormat),
-          ),
-          const VerticalDivider(width: 1),
-          // ── Sidebar (right 1/3) ──
-          Expanded(
-            flex: 1,
-            child: ListView(
+      endDrawer: isMobile ? Drawer(child: sidebarContent) : null,
+      body: isMobile
+          ? _buildCalendar(textColor, textSmallColor, use24HourFormat)
+          : Row(
               children: [
-                // Section: My Places
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Row(
-                    children: [
-                      Text(
-                        'My Places',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.refresh, size: 18),
-                        onPressed: () {
-                          setState(() => _isLoadingPlaces = true);
-                          _loadSavedPlaces();
-                        },
-                      ),
-                    ],
-                  ),
+                // ── Calendar view (left 2/3) ──
+                Expanded(
+                  flex: 2,
+                  child: _buildCalendar(textColor, textSmallColor, use24HourFormat),
                 ),
-                _buildPlacesSidebar(),
-                const Divider(),
-                // Section: Device Calendars
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Device Calendars',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (_hasCalendarPermission)
-                        IconButton(
-                          icon: const Icon(Icons.sync, size: 18),
-                          onPressed: _loadDeviceCalendars,
-                        ),
-                    ],
-                  ),
+                const VerticalDivider(width: 1),
+                // ── Sidebar (right 1/3) ──
+                Expanded(
+                  flex: 1,
+                  child: sidebarContent,
                 ),
-                _buildDeviceCalendarsSidebar(),
-                const Divider(),
-                // Section: Remote Subscription
-                _buildRemoteSubscriptionSidebar(),
-                const Divider(),
-                // Section: Imported Calendars
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Imported Events',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (_importedEvents.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 18),
-                          onPressed: () => setState(() {
-                            _importedEvents = [];
-                            _persistImportedEvents();
-                          }),
-                          tooltip: 'Clear Imported',
-                        ),
-                      IconButton(
-                        icon: _isImporting 
-                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                            : const Icon(Icons.file_upload, size: 18),
-                        onPressed: _isImporting ? null : _importIcalFile,
-                        tooltip: 'Import .ics file',
-                      ),
-                    ],
-                  ),
-                ),
-                if (_importedEvents.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      'No events imported. Upload a .ics file to see external events.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
-                      ),
-                    ),
-                  )
-                else
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    child: Text(
-                      'Displaying ${_importedEvents.length} imported events.',
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                  ),
               ],
             ),
-          ),
-        ],
-      ),
     );
   }
 

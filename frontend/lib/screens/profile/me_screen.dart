@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../models/user.dart';
 import '../../components/shared/address_input_accordion.dart';
+import '../../screens/profile/settings_screen.dart';
 
 class MeScreen extends StatefulWidget {
   const MeScreen({super.key});
@@ -161,6 +162,17 @@ class _MeScreenState extends State<MeScreen> {
               title: const Text('My Profile'),
               backgroundColor: Colors.transparent,
               elevation: 0,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    );
+                  },
+                ),
+              ],
             ),
             body: SafeArea(
               child: SingleChildScrollView(

@@ -110,8 +110,8 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             sliver: SliverGrid(
                               gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
+                                  const SliverGridDelegateWithMaxCrossAxisExtent(
+                                    maxCrossAxisExtent: 300,
                                     mainAxisExtent: 140,
                                     crossAxisSpacing: 8,
                                     mainAxisSpacing: 8,
@@ -158,8 +158,8 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             sliver: SliverGrid(
                               gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
+                                  const SliverGridDelegateWithMaxCrossAxisExtent(
+                                    maxCrossAxisExtent: 300,
                                     mainAxisExtent: 140,
                                     crossAxisSpacing: 8,
                                     mainAxisSpacing: 8,

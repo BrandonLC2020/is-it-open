@@ -1178,40 +1178,61 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             ),
         ],
       ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildGraphicPicker(),
-                  _buildAverageVisitLengthPicker(),
-                  _buildAddressSection(),
-                  const SizedBox(height: 16),
-                  _buildContactInfoSection(),
-                  // More details will be added here later
-                ],
-              ),
-            ),
-          ),
-          const VerticalDivider(width: 1),
-          Expanded(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 800;
+          
+          Widget detailsContent = SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
-                  child: _buildCalendarOptions(),
-                ),
-                Expanded(
-                  child: _buildCalendar(textColor, textSmallColor, use24HourFormat),
-                ),
+                _buildGraphicPicker(),
+                _buildAverageVisitLengthPicker(),
+                _buildAddressSection(),
+                const SizedBox(height: 16),
+                _buildContactInfoSection(),
+                // More details will be added here later
               ],
             ),
-          ),
-        ],
+          );
+
+          Widget calendarContent = Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
+                child: _buildCalendarOptions(),
+              ),
+              Expanded(
+                child: _buildCalendar(textColor, textSmallColor, use24HourFormat),
+              ),
+            ],
+          );
+
+          if (isMobile) {
+            return Column(
+              children: [
+                Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.4, // Max 40% of screen height for details so calendar has room
+                  ),
+                  child: detailsContent,
+                ),
+                const Divider(height: 1),
+                Expanded(child: calendarContent),
+              ],
+            );
+          } else {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: detailsContent),
+                const VerticalDivider(width: 1),
+                Expanded(child: calendarContent),
+              ],
+            );
+          }
+        },
       ),
     );
   }

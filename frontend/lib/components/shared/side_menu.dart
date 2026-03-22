@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/theme/theme_cubit.dart';
 import 'glass_container.dart';
+import '../../screens/profile/settings_screen.dart';
 
 class SideMenu extends StatelessWidget {
   final Function(int) onIndexChanged;
@@ -66,7 +67,22 @@ class SideMenu extends StatelessWidget {
               context,
             ).colorScheme.onSurface.withValues(alpha: 0.2),
           ),
-          _buildNavItem(context, 5, 'Settings', Icons.settings),
+          ListTile(
+            leading: Icon(
+              Icons.settings,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            title: Text(
+              'Settings',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+          ),
           ListTile(
             leading: Icon(
               isDarkMode ? Icons.dark_mode : Icons.light_mode,
