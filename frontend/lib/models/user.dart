@@ -19,6 +19,7 @@ class User {
   final double? workLat;
   final double? workLng;
   final bool useCurrentLocation;
+  final String? calendarSubscriptionUrl;
   final String? token;
 
   User({
@@ -42,6 +43,7 @@ class User {
     this.workLat,
     this.workLng,
     this.useCurrentLocation = false,
+    this.calendarSubscriptionUrl,
     this.token,
   });
 
@@ -67,6 +69,7 @@ class User {
       workLat: json['work_lat']?.toDouble(),
       workLng: json['work_lng']?.toDouble(),
       useCurrentLocation: json['use_current_location'] ?? false,
+      calendarSubscriptionUrl: json['calendar_subscription_url'],
       token: json['token'],
     );
   }
@@ -93,6 +96,7 @@ class User {
       'work_lat': workLat,
       'work_lng': workLng,
       'use_current_location': useCurrentLocation,
+      'calendar_subscription_url': calendarSubscriptionUrl,
       'token': token,
     };
   }

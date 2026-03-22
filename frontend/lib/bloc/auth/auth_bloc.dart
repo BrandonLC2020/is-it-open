@@ -28,6 +28,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final username = prefs.getString('auth_username');
       final userId = prefs.getInt('auth_user_id');
       final userEmail = prefs.getString('auth_user_email');
+      final calendarUrl = prefs.getString('auth_calendar_url');
 
       if (token != null && username != null && userId != null) {
         apiClient.setAuthToken(token);
@@ -42,6 +43,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 id: userId,
                 username: username,
                 email: userEmail,
+                calendarSubscriptionUrl: calendarUrl,
                 token: token,
               ),
             ),
@@ -129,6 +131,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 workLat: user.workLat,
                 workLng: user.workLng,
                 useCurrentLocation: user.useCurrentLocation,
+                calendarSubscriptionUrl: user.calendarSubscriptionUrl,
                 token: currentState.user.token,
               );
 
@@ -150,6 +153,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await prefs.setInt('auth_user_id', user.id);
     if (user.email != null) {
       await prefs.setString('auth_user_email', user.email!);
+    }
+    if (user.calendarSubscriptionUrl != null) {
+      await prefs.setString('auth_calendar_url', user.calendarSubscriptionUrl!);
+    } else {
+      await prefs.remove('auth_calendar_url');
     }
   }
 }

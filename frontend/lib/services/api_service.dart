@@ -201,4 +201,18 @@ class ApiService {
       );
     }
   }
+
+  Future<String> getCalendarFromUrl(String url) async {
+    try {
+      final response = await _dio.get(
+        '/calendar/proxy',
+        queryParameters: {'url': url},
+      );
+      return response.data.toString();
+    } on DioException catch (e) {
+      throw Exception(
+        'Failed to fetch remote calendar: ${e.response?.data ?? e.message}',
+      );
+    }
+  }
 }

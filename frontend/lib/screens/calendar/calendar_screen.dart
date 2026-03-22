@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
+import 'dart:convert' show utf8, jsonEncode, jsonDecode;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:calendar_view/calendar_view.dart';
+import 'package:device_calendar/device_calendar.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:icalendar_parser/icalendar_parser.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/saved_place.dart';
 import '../../services/api_service.dart';
 import '../../bloc/preferences/preferences_cubit.dart';
+import '../../bloc/auth/auth_bloc.dart';
+import '../../models/user.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
 
@@ -26,6 +35,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
   List<SavedPlace> _savedPlaces = [];
   bool _isLoadingPlaces = true;
   final Set<String> _checkedPlaceIds = {};
+
+  // Device calendars state
+  final DeviceCalendarPlugin _deviceCalendarPlugin = DeviceCalendarPlugin();
+  List<Calendar> _deviceCalendars = [];
+  List<CalendarEventData<Object?>> _deviceEvents = [];
+  final Set<String> _checkedCalendarIds = {};
+  bool _isLoadingCalendars = false;
+  bool _hasCalendarPermission = false;
+
+  // Imported events (iCal/ICS)
+  List<CalendarEventData<Object?>> _importedEvents = [];
+  bool _isImporting = false;
+
+  // Remote subscription state
+  List<CalendarEventData<Object?>> _remoteEvents = [];
+  bool _isLoadingRemote = false;
 
   // Predefined palette for places without a custom color
   static const List<Color> _defaultPalette = [
@@ -59,6 +84,254 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void initState() {
     super.initState();
     _loadSavedPlaces();
+    _initDeviceCalendar();
+    _loadPersistedImportedEvents();
+    _fetchRemoteCalendar();
+  }
+
+  Future<void> _loadPersistedImportedEvents() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? eventsJson = prefs.getString('persisted_imported_events');
+      if (eventsJson != null) {
+        final List<dynamic> decoded = jsonDecode(eventsJson);
+        final List<CalendarEventData<Object?>> events = decoded.map((e) {
+          return CalendarEventData(
+            title: e['title'],
+            date: DateTime.parse(e['date']),
+            startTime: DateTime.parse(e['startTime']),
+            endTime: DateTime.parse(e['endTime']),
+            description: e['description'],
+            color: Colors.teal.withOpacity(0.5),
+          );
+        }).toList();
+        if (mounted) {
+          setState(() => _importedEvents = events);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading persisted events: $e');
+    }
+  }
+
+  Future<void> _persistImportedEvents() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final List<Map<String, dynamic>> toStore = _importedEvents.map((e) {
+        return {
+          'title': e.title,
+          'date': e.date.toIso8601String(),
+          'startTime': e.startTime?.toIso8601String(),
+          'endTime': e.endTime?.toIso8601String(),
+          'description': e.description,
+        };
+      }).toList();
+      await prefs.setString('persisted_imported_events', jsonEncode(toStore));
+    } catch (e) {
+      debugPrint('Error persisting events: $e');
+    }
+  }
+
+  Future<void> _fetchRemoteCalendar() async {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) return;
+    final url = authState.user.calendarSubscriptionUrl;
+    if (url == null || url.isEmpty) return;
+
+    setState(() => _isLoadingRemote = true);
+    try {
+      final apiService = context.read<ApiService>();
+      final icsString = await apiService.getCalendarFromUrl(url);
+      final iCalendar = ICalendar.fromString(icsString);
+      
+      final List<CalendarEventData<Object?>> events = [];
+      for (final entry in iCalendar.data) {
+        if (entry['type'] == 'VEVENT') {
+          final title = entry['summary'] ?? 'Remote Event';
+          final dtstart = entry['dtstart'] as IcsDateTime?;
+          final dtend = entry['dtend'] as IcsDateTime?;
+          final description = entry['description'];
+
+          if (dtstart != null) {
+            final start = dtstart.toDateTime();
+            final end = dtend?.toDateTime() ?? start?.add(const Duration(hours: 1));
+            
+            if (start != null) {
+              events.add(CalendarEventData(
+                title: title,
+                date: start,
+                startTime: start,
+                endTime: end ?? start,
+                description: description,
+                color: Colors.deepPurple.withOpacity(0.5),
+              ));
+            }
+          }
+        }
+      }
+      if (mounted) {
+        setState(() => _remoteEvents = events);
+      }
+    } catch (e) {
+      debugPrint('Error fetching remote calendar: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingRemote = false);
+      }
+    }
+  }
+
+  Future<void> _updateSubscriptionUrl(String url) async {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) return;
+    
+    final updatedUser = User(
+      id: authState.user.id,
+      username: authState.user.username,
+      calendarSubscriptionUrl: url,
+    );
+    
+    context.read<AuthBloc>().add(ProfileUpdateRequested(updatedUser: updatedUser));
+  }
+
+  Future<void> _initDeviceCalendar() async {
+    // Only support mobile for local device calendar sync for now
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
+
+    setState(() => _isLoadingCalendars = true);
+    try {
+      var permissionsGranted = await _deviceCalendarPlugin.hasPermissions();
+      if (permissionsGranted.isSuccess && (permissionsGranted.data == false)) {
+        permissionsGranted = await _deviceCalendarPlugin.requestPermissions();
+      }
+
+      if (permissionsGranted.isSuccess && permissionsGranted.data == true) {
+        if (mounted) {
+          setState(() => _hasCalendarPermission = true);
+        }
+        await _loadDeviceCalendars();
+      }
+    } catch (e) {
+      debugPrint('Error initializing device calendar: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingCalendars = false);
+      }
+    }
+  }
+
+  Future<void> _loadDeviceCalendars() async {
+    final calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
+    if (calendarsResult.isSuccess && calendarsResult.data != null) {
+      if (mounted) {
+        setState(() {
+          _deviceCalendars = calendarsResult.data!;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadDeviceEvents() async {
+    if (_checkedCalendarIds.isEmpty) {
+      setState(() => _deviceEvents = []);
+      return;
+    }
+
+    final now = DateTime.now();
+    final startDate = now.subtract(const Duration(days: 28));
+    final endDate = now.add(const Duration(days: 84));
+
+    List<CalendarEventData<Object?>> allEvents = [];
+
+    for (final calendarId in _checkedCalendarIds) {
+      final eventsResult = await _deviceCalendarPlugin.retrieveEvents(
+        calendarId,
+        RetrieveEventsParams(startDate: startDate, endDate: endDate),
+      );
+
+      if (eventsResult.isSuccess && eventsResult.data != null) {
+        for (final event in eventsResult.data!) {
+          if (event.start != null && event.end != null) {
+            allEvents.add(CalendarEventData(
+              title: event.title ?? 'No Title',
+              date: event.start!,
+              startTime: event.start!,
+              endTime: event.end!,
+              description: event.description,
+              color: Colors.blue.withOpacity(0.5), // You could use calendar color if available
+            ));
+          }
+        }
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _deviceEvents = allEvents;
+      });
+    }
+  }
+
+  Future<void> _importIcalFile() async {
+    setState(() => _isImporting = true);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['ics'],
+        withData: true,
+      );
+
+      if (result != null && result.files.single.bytes != null) {
+        final icsString = utf8.decode(result.files.single.bytes!);
+        final iCalendar = ICalendar.fromString(icsString);
+        
+        final List<CalendarEventData<Object?>> events = [];
+        for (final entry in iCalendar.data) {
+          if (entry['type'] == 'VEVENT') {
+            final title = entry['summary'] ?? 'Imported Event';
+            final dtstart = entry['dtstart'] as IcsDateTime?;
+            final dtend = entry['dtend'] as IcsDateTime?;
+            final description = entry['description'];
+
+            if (dtstart != null) {
+              final start = dtstart.toDateTime();
+              final end = dtend?.toDateTime() ?? start?.add(const Duration(hours: 1));
+              
+              if (start != null) {
+                events.add(CalendarEventData(
+                  title: title,
+                  date: start,
+                  startTime: start,
+                  endTime: end ?? start,
+                  description: description,
+                  color: Colors.teal.withOpacity(0.5),
+                ));
+              }
+            }
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _importedEvents = events;
+            _persistImportedEvents();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Imported ${events.length} events successfully!')),
+            );
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error importing iCal: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isImporting = false);
+      }
+    }
   }
 
   Future<void> _loadSavedPlaces() async {
@@ -108,7 +381,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         continue;
       }
 
-      final color = _colorForPlace(sp, colorIndex).withValues(alpha: 0.7);
+      final color = _colorForPlace(sp, colorIndex).withOpacity(0.7);
       final label = _displayName(sp);
 
       for (int weekOffset = -4; weekOffset <= 12; weekOffset++) {
@@ -146,6 +419,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
       colorIndex++;
     }
 
+    // Add device events
+    for (final event in _deviceEvents) {
+      controller.add(event);
+    }
+
+    // Add imported events
+    for (final event in _importedEvents) {
+      controller.add(event);
+    }
+
+    // Add remote events
+    for (final event in _remoteEvents) {
+      controller.add(event);
+    }
+
     return controller;
   }
 
@@ -166,15 +454,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
         borderRadius: BorderRadius.circular(4),
       ),
       padding: const EdgeInsets.all(4),
-      child: Text(
-        event.title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            event.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (event.description != null && event.description!.isNotEmpty)
+            Text(
+              event.description!,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 9,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+        ],
       ),
     );
   }
@@ -357,9 +660,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
               decoration: isToday
                   ? BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.25),
+                      color: Colors.white.withOpacity(0.25),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+                      border: Border.all(color: Colors.white.withOpacity(0.4)),
                     )
                   : null,
               child: Column(
@@ -469,15 +772,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Save places from Search to see their hours here',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                ),
-              ),
             ],
           ),
         ),
@@ -485,6 +779,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
 
     return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: _savedPlaces.length,
       itemBuilder: (context, index) {
@@ -520,21 +816,102 @@ class _CalendarScreenState extends State<CalendarScreen> {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
-          subtitle: sp.place.hours.isNotEmpty
-              ? Text(
-                  '${sp.place.hours.length} schedule${sp.place.hours.length == 1 ? '' : 's'}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                )
-              : Text(
-                  'No hours available',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                  ),
-                ),
+          dense: true,
+          controlAffinity: ListTileControlAffinity.leading,
+          activeColor: color,
+        );
+      },
+    );
+  }
+
+  Widget _buildDeviceCalendarsSidebar() {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Icon(Icons.devices_other, size: 32, color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5)),
+            const SizedBox(height: 8),
+            Text(
+              'Device sync is available on Mobile only. For Web/Desktop, consider cloud sync (coming soon).',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (!_hasCalendarPermission) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const Text(
+              'Grant permission to see your device calendars.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _initDeviceCalendar,
+              child: const Text('Grant Permission'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_isLoadingCalendars) {
+      return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()));
+    }
+
+    if (_deviceCalendars.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Text('No calendars found on this device.', textAlign: TextAlign.center),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: _deviceCalendars.length,
+      itemBuilder: (context, index) {
+        final cal = _deviceCalendars[index];
+        final isChecked = _checkedCalendarIds.contains(cal.id);
+        final color = cal.color != null ? Color(cal.color!) : Colors.blue;
+
+        return CheckboxListTile(
+          value: isChecked,
+          onChanged: (val) {
+            setState(() {
+              if (val == true) {
+                _checkedCalendarIds.add(cal.id!);
+              } else {
+                _checkedCalendarIds.remove(cal.id);
+              }
+            });
+            _loadDeviceEvents();
+          },
+          secondary: Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          title: Text(
+            cal.name ?? 'Unnamed Calendar',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 13),
+          ),
           dense: true,
           controlAffinity: ListTileControlAffinity.leading,
           activeColor: color,
@@ -572,12 +949,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
             child: _buildCalendar(textColor, textSmallColor, use24HourFormat),
           ),
           const VerticalDivider(width: 1),
-          // ── Saved places sidebar (right 1/3) ──
+          // ── Sidebar (right 1/3) ──
           Expanded(
             flex: 1,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: ListView(
               children: [
+                // Section: My Places
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Row(
@@ -585,35 +962,212 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       Text(
                         'My Places',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const Spacer(),
-                      if (_checkedPlaceIds.isNotEmpty)
-                        TextButton(
-                          onPressed: () => setState(() => _checkedPlaceIds.clear()),
-                          child: const Text('Clear All'),
-                        ),
                       IconButton(
-                        icon: const Icon(Icons.refresh, size: 20),
+                        icon: const Icon(Icons.refresh, size: 18),
                         onPressed: () {
                           setState(() => _isLoadingPlaces = true);
                           _loadSavedPlaces();
                         },
-                        tooltip: 'Refresh',
                       ),
                     ],
                   ),
                 ),
-                Divider(
-                  height: 1,
-                  color: Theme.of(context).dividerColor,
+                _buildPlacesSidebar(),
+                const Divider(),
+                // Section: Device Calendars
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Device Calendars',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (_hasCalendarPermission)
+                        IconButton(
+                          icon: const Icon(Icons.sync, size: 18),
+                          onPressed: _loadDeviceCalendars,
+                        ),
+                    ],
+                  ),
                 ),
-                Expanded(child: _buildPlacesSidebar()),
+                _buildDeviceCalendarsSidebar(),
+                const Divider(),
+                // Section: Remote Subscription
+                _buildRemoteSubscriptionSidebar(),
+                const Divider(),
+                // Section: Imported Calendars
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Imported Events',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (_importedEvents.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                          onPressed: () => setState(() {
+                            _importedEvents = [];
+                            _persistImportedEvents();
+                          }),
+                          tooltip: 'Clear Imported',
+                        ),
+                      IconButton(
+                        icon: _isImporting 
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.file_upload, size: 18),
+                        onPressed: _isImporting ? null : _importIcalFile,
+                        tooltip: 'Import .ics file',
+                      ),
+                    ],
+                  ),
+                ),
+                if (_importedEvents.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'No events imported. Upload a .ics file to see external events.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                      ),
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: Text(
+                      'Displaying ${_importedEvents.length} imported events.',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRemoteSubscriptionSidebar() {
+    final authState = context.watch<AuthBloc>().state;
+    final url = authState is AuthAuthenticated ? authState.user.calendarSubscriptionUrl : null;
+    final hasUrl = url != null && url.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Row(
+            children: [
+              Text(
+                'Remote Sync',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const Spacer(),
+              if (hasUrl)
+                IconButton(
+                  icon: _isLoadingRemote
+                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.sync, size: 18),
+                  onPressed: _isLoadingRemote ? null : _fetchRemoteCalendar,
+                ),
+              IconButton(
+                icon: const Icon(Icons.settings, size: 18),
+                onPressed: _showSubscriptionDialog,
+              ),
+            ],
+          ),
+        ),
+        if (!hasUrl)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'No subscription URL set. Use a .ics URL for real-time sync.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            child: Text(
+              'Syncing with ${_remoteEvents.length} events.',
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _showSubscriptionDialog() {
+    final authState = context.read<AuthBloc>().state;
+    final currentUrl = authState is AuthAuthenticated ? authState.user.calendarSubscriptionUrl : '';
+    final controller = TextEditingController(text: currentUrl);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Calendar Subscription'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Enter a "Secret iCal URL" (ends in .ics) from iCloud, Outlook, or Proton.',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'iCal URL',
+                hintText: 'https://example.com/calendar.ics',
+                border: OutlineInputBorder(),
+              ),
+              style: const TextStyle(fontSize: 13),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _updateSubscriptionUrl(controller.text);
+              Navigator.pop(context);
+              // Small delay to allow profile update to finish before fetching
+              Future.delayed(const Duration(seconds: 1), _fetchRemoteCalendar);
+            },
+            child: const Text('Save & Sync'),
           ),
         ],
       ),

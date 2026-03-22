@@ -35,6 +35,7 @@ class AuthOutput(Schema):
     work_lat: Optional[float] = None
     work_lng: Optional[float] = None
     use_current_location: bool = False
+    calendar_subscription_url: Optional[str] = ''
 
 class RegisterInput(Schema):
     username: str
@@ -73,7 +74,8 @@ def login(request, data: LoginInput):
         "work_zip": user.profile.work_zip,
         "work_lat": user.profile.work_lat,
         "work_lng": user.profile.work_lng,
-        "use_current_location": user.profile.use_current_location
+        "use_current_location": user.profile.use_current_location,
+        "calendar_subscription_url": user.profile.calendar_subscription_url
     }
 
 @router.post("/register", response=AuthOutput)
@@ -112,7 +114,8 @@ def register(request, data: RegisterInput):
         "work_zip": profile.work_zip,
         "work_lat": profile.work_lat,
         "work_lng": profile.work_lng,
-        "use_current_location": profile.use_current_location
+        "use_current_location": profile.use_current_location,
+        "calendar_subscription_url": profile.calendar_subscription_url
     }
 
 @router.get("/me", response=AuthOutput, auth=GlobalAuth())
@@ -177,6 +180,7 @@ class ProfileUpdateInput(Schema):
     work_lat: Optional[float] = None
     work_lng: Optional[float] = None
     use_current_location: Optional[bool] = None
+    calendar_subscription_url: Optional[str] = None
 
 @router.put("/me", response=AuthOutput, auth=GlobalAuth())
 def update_me(request, data: ProfileUpdateInput):
@@ -276,6 +280,10 @@ def update_me(request, data: ProfileUpdateInput):
         profile.use_current_location = data.use_current_location
         profile_updated = True
 
+    if data.calendar_subscription_url is not None:
+        profile.calendar_subscription_url = data.calendar_subscription_url
+        profile_updated = True
+
     # Perform geocoding if needed
     if home_address_changed or work_address_changed:
         client = TomTomClient()
@@ -330,5 +338,6 @@ def update_me(request, data: ProfileUpdateInput):
         "work_zip": profile.work_zip,
         "work_lat": profile.work_lat,
         "work_lng": profile.work_lng,
-        "use_current_location": profile.use_current_location
+        "use_current_location": profile.use_current_location,
+        "calendar_subscription_url": profile.calendar_subscription_url
     }

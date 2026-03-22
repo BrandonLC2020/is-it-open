@@ -46,6 +46,7 @@ class UserProfile(models.Model):
     work_lng = models.FloatField(null=True, blank=True)
     
     use_current_location = models.BooleanField(default=False)
+    calendar_subscription_url = models.URLField(max_length=500, blank=True, default='')
 
     def __str__(self):
         return f"Profile for {self.user.username}"
