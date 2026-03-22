@@ -1,11 +1,11 @@
 {
-    "name": "frontend",
-    "short_name": "frontend",
+    "name": "Is It Open?",
+    "short_name": "Is It Open?",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Is It Open? - Business hours and availability tracker.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
