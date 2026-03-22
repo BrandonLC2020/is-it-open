@@ -37,6 +37,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   DateTime? _plannedVisitTime;
   double _dragAccumulator = 0.0;
   bool _isCalendarExpanded = false;
+  bool _isCalendarMinimized = false;
 
   final List<String> _suggestedLabels = ['Gym', 'Pharmacy', 'Grocery', 'Coffee', 'Work', 'Home', 'Restaurant'];
 
@@ -1204,7 +1205,20 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                 padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
                 child: Row(
                   children: [
-                    if (isMobile) const SizedBox(width: 48), // Balance the right button
+                    if (isMobile) ...[
+                      IconButton(
+                        icon: Icon(
+                          _isCalendarMinimized ? Icons.expand_less : Icons.minimize,
+                          size: 24,
+                        ),
+                        tooltip: _isCalendarMinimized ? 'Show calendar' : 'Minimize calendar',
+                        onPressed: () => setState(() {
+                          _isCalendarMinimized = !_isCalendarMinimized;
+                          if (_isCalendarMinimized) _isCalendarExpanded = false;
+                        }),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
                     const Spacer(),
                     _buildCalendarOptions(),
                     const Spacer(),
@@ -1215,16 +1229,20 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                           size: 24,
                         ),
                         tooltip: _isCalendarExpanded ? 'Collapse calendar' : 'Expand calendar',
-                        onPressed: () => setState(() => _isCalendarExpanded = !_isCalendarExpanded),
+                        onPressed: () => setState(() {
+                          _isCalendarExpanded = !_isCalendarExpanded;
+                          if (_isCalendarExpanded) _isCalendarMinimized = false;
+                        }),
                         visualDensity: VisualDensity.compact,
                       ),
                     ],
                   ],
                 ),
               ),
-              Expanded(
-                child: _buildCalendar(textColor, textSmallColor, use24HourFormat),
-              ),
+              if (!_isCalendarMinimized)
+                Expanded(
+                  child: _buildCalendar(textColor, textSmallColor, use24HourFormat),
+                ),
             ],
           );
 
@@ -1232,17 +1250,26 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             return Column(
               children: [
                 if (!_isCalendarExpanded) ...[
-                  // Compact details section — scrollable within its constrained area
-                  Container(
-                    constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.height * 0.3,
+                  // Details section — expands when calendar is minimized
+                  Expanded(
+                    flex: _isCalendarMinimized ? 1 : 0,
+                    child: Container(
+                      constraints: _isCalendarMinimized ? null : BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.3,
+                      ),
+                      child: detailsContent,
                     ),
-                    child: detailsContent,
                   ),
                   const Divider(height: 1),
                 ],
-                // Calendar takes remaining space and scrolls internally
-                Expanded(child: calendarContent),
+                // Calendar: minimized just shows the picker row, otherwise expands
+                if (_isCalendarMinimized)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24.0),
+                    child: calendarContent,
+                  )
+                else
+                  Expanded(child: calendarContent),
               ],
             );
           } else {
