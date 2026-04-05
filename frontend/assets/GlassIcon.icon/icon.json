@@ -20,7 +20,14 @@
       "layers" : [
         {
           "image-name" : "Is It Open_ Foreground 4.png",
-          "name" : "Is It Open_ Foreground 4"
+          "name" : "Is It Open_ Foreground 4",
+          "position" : {
+            "scale" : 1.1,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
         },
         {
           "image-name" : "Is It Open_ Background 2.png",
