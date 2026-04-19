@@ -45,3 +45,17 @@ class PlaceApiTest(TestCase):
         place = Place.objects.get(tomtom_id="123")
         self.assertEqual(place.hours.count(), 1)
         self.assertEqual(place.hours.first().open_time.strftime("%H:%M"), "09:00")
+
+    def test_toggle_check_it_out(self):
+        place = Place.objects.create(tomtom_id="1234", name="Test2", address="123", latitude=0, longitude=0)
+        saved_place = SavedPlace.objects.create(user=self.user, place=place)
+        
+        response = self.client.patch(
+            "/api/places/bookmarks/1234/check-it-out", 
+            data=json.dumps({"is_check_it_out": True}),
+            content_type="application/json",
+            **self.auth_headers
+        )
+        self.assertEqual(response.status_code, 200)
+        saved_place.refresh_from_db()
+        self.assertTrue(saved_place.is_check_it_out)

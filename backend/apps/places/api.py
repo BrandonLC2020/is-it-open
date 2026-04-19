@@ -56,10 +56,14 @@ class SavedPlaceSchema(Schema):
     icon: Optional[str] = None
     color: Optional[str] = None
     is_pinned: bool
+    is_check_it_out: bool = False
     average_visit_length: Optional[int] = None
 
 class TogglePinInput(Schema):
     is_pinned: bool
+
+class ToggleCheckItOutInput(Schema):
+    is_check_it_out: bool
 
 class UpdateGraphicInput(Schema):
     icon: Optional[str] = None
@@ -174,6 +178,14 @@ def toggle_pin(request, tomtom_id: str, payload: TogglePinInput):
     place = get_object_or_404(Place, tomtom_id=tomtom_id)
     saved_place = get_object_or_404(SavedPlace, user=request.auth, place=place)
     saved_place.is_pinned = payload.is_pinned
+    saved_place.save()
+    return saved_place
+
+@router.patch("/bookmarks/{tomtom_id}/check-it-out", response=SavedPlaceSchema)
+def toggle_check_it_out(request, tomtom_id: str, payload: ToggleCheckItOutInput):
+    place = get_object_or_404(Place, tomtom_id=tomtom_id)
+    saved_place = get_object_or_404(SavedPlace, user=request.auth, place=place)
+    saved_place.is_check_it_out = payload.is_check_it_out
     saved_place.save()
     return saved_place
 
