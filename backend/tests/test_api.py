@@ -1,10 +1,23 @@
 from django.test import TestCase, Client
-from apps.places.models import Place
+from django.contrib.auth.models import User
+from apps.places.models import Place, SavedPlace
+from apps.users.models import AuthToken
 import json
+
+class SavedPlaceModelTest(TestCase):
+    def test_check_it_out_default_false(self):
+        user = User.objects.create_user(username="testuser", password="password")
+        place = Place.objects.create(tomtom_id="123", name="Test", address="123", latitude=0, longitude=0)
+        saved_place = SavedPlace.objects.create(user=user, place=place)
+        
+        self.assertFalse(saved_place.is_check_it_out)
 
 class PlaceApiTest(TestCase):
     def setUp(self):
         self.client = Client()
+        self.user = User.objects.create_user(username="testuser", password="password")
+        self.token = AuthToken.objects.create(user=self.user)
+        self.auth_headers = {"HTTP_AUTHORIZATION": f"Bearer {self.token.key}"}
 
     def test_create_place(self):
         payload = {
@@ -24,7 +37,8 @@ class PlaceApiTest(TestCase):
         response = self.client.post(
             "/api/places/",
             data=json.dumps(payload),
-            content_type="application/json"
+            content_type="application/json",
+            **self.auth_headers
         )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(Place.objects.filter(tomtom_id="123").exists())
