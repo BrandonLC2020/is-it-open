@@ -15,6 +15,7 @@ class MyPlacesScreen extends StatefulWidget {
 class _MyPlacesScreenState extends State<MyPlacesScreen> {
   late Future<List<SavedPlace>> _bookmarksFuture;
   bool _isGridView = false;
+  int _filterIndex = 0; // 0: All, 1: Want to Visit, 2: Visited
 
   @override
   void initState() {
@@ -83,7 +84,14 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
               );
             }
 
-            final places = snapshot.data!;
+            final allPlaces = snapshot.data!;
+            List<SavedPlace> places = allPlaces;
+            if (_filterIndex == 1) { // Want to Visit
+              places = allPlaces.where((p) => p.isCheckItOut).toList();
+            } else if (_filterIndex == 2) { // Visited
+              places = allPlaces.where((p) => !p.isCheckItOut).toList();
+            }
+
             final pinnedPlaces = places.where((p) => p.isPinned).toList();
             final unpinnedPlaces = places.where((p) => !p.isPinned).toList();
 
@@ -91,20 +99,24 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
               onRefresh: _refreshBookmarks,
               child: CustomScrollView(
                 slivers: [
-                  if (pinnedPlaces.isNotEmpty) ...[
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      sliver: SliverToBoxAdapter(
-                        child: Text(
-                          'Pinned',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: SegmentedButton<int>(
+                        segments: const [
+                          ButtonSegment(value: 0, label: Text('All')),
+                          ButtonSegment(value: 1, label: Text('Want to Visit')),
+                          ButtonSegment(value: 2, label: Text('Visited')),
+                        ],
+                        selected: {_filterIndex},
+                        onSelectionChanged: (Set<int> newSelection) {
+                          setState(() {
+                            _filterIndex = newSelection.first;
+                          });
+                        },
                       ),
                     ),
+                  ),
                     _isGridView
                         ? SliverPadding(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
