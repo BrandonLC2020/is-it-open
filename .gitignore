@@ -166,3 +166,4 @@ _override.tf.json
 .terraform.lock.hcl
 
 *.sqlite3.worktrees/
+backend/db.sqlite3
