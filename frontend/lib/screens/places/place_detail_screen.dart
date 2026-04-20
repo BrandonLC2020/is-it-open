@@ -19,11 +19,7 @@ class PlaceDetailScreen extends StatefulWidget {
   State<PlaceDetailScreen> createState() => _PlaceDetailScreenState();
 }
 
-enum CalendarViewType {
-  singleDay,
-  threeDay,
-  week,
-}
+enum CalendarViewType { singleDay, threeDay, week }
 
 class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   CalendarViewType _currentView = CalendarViewType.week;
@@ -39,7 +35,15 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   bool _isCalendarExpanded = false;
   bool _isCalendarMinimized = false;
 
-  final List<String> _suggestedLabels = ['Gym', 'Pharmacy', 'Grocery', 'Coffee', 'Work', 'Home', 'Restaurant'];
+  final List<String> _suggestedLabels = [
+    'Gym',
+    'Pharmacy',
+    'Grocery',
+    'Coffee',
+    'Work',
+    'Home',
+    'Restaurant',
+  ];
 
   final Map<String, IconData> _availableIcons = {
     'restaurant': Icons.restaurant,
@@ -83,9 +87,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       final apiService = context.read<ApiService>();
       final bookmarks = await apiService.getBookmarks();
       final saved = bookmarks.cast<SavedPlace?>().firstWhere(
-            (b) => b?.place.tomtomId == widget.place.tomtomId,
-            orElse: () => null,
-          );
+        (b) => b?.place.tomtomId == widget.place.tomtomId,
+        orElse: () => null,
+      );
       if (mounted) {
         setState(() {
           _savedPlace = saved;
@@ -104,17 +108,28 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     }
   }
 
-  Future<void> _updateGraphic({String? icon, String? color, String? customName}) async {
+  Future<void> _updateGraphic({
+    String? icon,
+    String? color,
+    String? customName,
+  }) async {
     try {
       final apiService = context.read<ApiService>();
-      await apiService.updateBookmarkGraphic(widget.place.tomtomId, icon, color, customName: customName);
-      
+      await apiService.updateBookmarkGraphic(
+        widget.place.tomtomId,
+        icon,
+        color,
+        customName: customName,
+      );
+
       if (_savedPlace != null) {
         setState(() {
           _savedPlace = SavedPlace(
             id: _savedPlace!.id,
             place: _savedPlace!.place,
-            customName: customName != null && customName.isEmpty ? null : (customName ?? _savedPlace!.customName),
+            customName: customName != null && customName.isEmpty
+                ? null
+                : (customName ?? _savedPlace!.customName),
             isPinned: _savedPlace!.isPinned,
             icon: icon ?? _savedPlace!.icon,
             color: color ?? _savedPlace!.color,
@@ -125,7 +140,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             _isEditingGraphic = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile graphic saved successfully!'), backgroundColor: Colors.green),
+            const SnackBar(
+              content: Text('Profile graphic saved successfully!'),
+              backgroundColor: Colors.green,
+            ),
           );
         }
       }
@@ -152,10 +170,12 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         visitStart.month,
         visitStart.day,
       ).add(Duration(days: dayOffset));
-      
+
       final dayOfWeek = baseDate.weekday - 1; // 0=Mon, ..., 6=Sun
-      final dayHours = widget.place.hours.where((h) => h.dayOfWeek == dayOfWeek);
-      
+      final dayHours = widget.place.hours.where(
+        (h) => h.dayOfWeek == dayOfWeek,
+      );
+
       for (final hours in dayHours) {
         final startTime = DateTime(
           baseDate.year,
@@ -175,8 +195,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           endTime = endTime.add(const Duration(days: 1));
         }
 
-        if ((visitStart.isAfter(startTime) || visitStart.isAtSameMomentAs(startTime)) &&
-            (visitEnd.isBefore(endTime) || visitEnd.isAtSameMomentAs(endTime))) {
+        if ((visitStart.isAfter(startTime) ||
+                visitStart.isAtSameMomentAs(startTime)) &&
+            (visitEnd.isBefore(endTime) ||
+                visitEnd.isAtSameMomentAs(endTime))) {
           return true;
         }
       }
@@ -199,16 +221,22 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       onTapUp: (details) {
         if (!isPlannedVisit && _savedPlace?.averageVisitLength != null) {
           final tappedMinutes = details.localPosition.dy.toInt();
-          final tappedTime = event.startTime!.add(Duration(minutes: tappedMinutes));
-          final visitEnd = tappedTime.add(Duration(minutes: _savedPlace!.averageVisitLength!));
-          
+          final tappedTime = event.startTime!.add(
+            Duration(minutes: tappedMinutes),
+          );
+          final visitEnd = tappedTime.add(
+            Duration(minutes: _savedPlace!.averageVisitLength!),
+          );
+
           if (_isOpenDuring(tappedTime, visitEnd)) {
             setState(() => _plannedVisitTime = tappedTime);
           } else {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Planned visit must be entirely within open business hours'),
+                content: Text(
+                  'Planned visit must be entirely within open business hours',
+                ),
                 backgroundColor: Colors.orange,
                 duration: Duration(seconds: 2),
               ),
@@ -216,41 +244,57 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           }
         }
       },
-      onDoubleTap: isPlannedVisit ? () {
-        setState(() => _plannedVisitTime = null);
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Planned visit removed'),
-            backgroundColor: Colors.grey,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      } : null,
-      onVerticalDragStart: isPlannedVisit ? (_) => _dragAccumulator = 0.0 : null,
-      onVerticalDragUpdate: isPlannedVisit ? (details) {
-        if (_savedPlace?.averageVisitLength != null) {
-          _dragAccumulator += details.delta.dy;
-          if (_dragAccumulator.abs() >= 1.0) {
-            final minutesDelta = _dragAccumulator.toInt();
-            _dragAccumulator -= minutesDelta;
-            
-            setState(() {
-              final proposedTime = _plannedVisitTime!.add(Duration(minutes: minutesDelta));
-              final visitEnd = proposedTime.add(Duration(minutes: _savedPlace!.averageVisitLength!));
-              if (_isOpenDuring(proposedTime, visitEnd)) {
-                _plannedVisitTime = proposedTime;
+      onDoubleTap: isPlannedVisit
+          ? () {
+              setState(() => _plannedVisitTime = null);
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Planned visit removed'),
+                  backgroundColor: Colors.grey,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          : null,
+      onVerticalDragStart: isPlannedVisit
+          ? (_) => _dragAccumulator = 0.0
+          : null,
+      onVerticalDragUpdate: isPlannedVisit
+          ? (details) {
+              if (_savedPlace?.averageVisitLength != null) {
+                _dragAccumulator += details.delta.dy;
+                if (_dragAccumulator.abs() >= 1.0) {
+                  final minutesDelta = _dragAccumulator.toInt();
+                  _dragAccumulator -= minutesDelta;
+
+                  setState(() {
+                    final proposedTime = _plannedVisitTime!.add(
+                      Duration(minutes: minutesDelta),
+                    );
+                    final visitEnd = proposedTime.add(
+                      Duration(minutes: _savedPlace!.averageVisitLength!),
+                    );
+                    if (_isOpenDuring(proposedTime, visitEnd)) {
+                      _plannedVisitTime = proposedTime;
+                    }
+                  });
+                }
               }
-            });
-          }
-        }
-      } : null,
+            }
+          : null,
       child: Container(
         decoration: BoxDecoration(
           color: event.color,
           borderRadius: BorderRadius.circular(4),
           boxShadow: isPlannedVisit
-              ? [const BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))]
+              ? [
+                  const BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ]
               : null,
           border: isPlannedVisit
               ? Border.all(color: Colors.white, width: 1.5)
@@ -281,7 +325,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     // Generate events for 4 weeks in the past and 12 weeks in the future
     for (int weekOffset = -4; weekOffset <= 12; weekOffset++) {
       final weekStart = startOfWeek.add(Duration(days: weekOffset * 7));
-      
+
       for (final hours in widget.place.hours) {
         final baseDate = weekStart.add(Duration(days: hours.dayOfWeek));
         final startTime = DateTime(
@@ -320,9 +364,15 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       controller.add(
         CalendarEventData(
           title: 'Planned Visit',
-          date: DateTime(_plannedVisitTime!.year, _plannedVisitTime!.month, _plannedVisitTime!.day),
+          date: DateTime(
+            _plannedVisitTime!.year,
+            _plannedVisitTime!.month,
+            _plannedVisitTime!.day,
+          ),
           startTime: _plannedVisitTime!,
-          endTime: _plannedVisitTime!.add(Duration(minutes: _savedPlace!.averageVisitLength!)),
+          endTime: _plannedVisitTime!.add(
+            Duration(minutes: _savedPlace!.averageVisitLength!),
+          ),
           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
         ),
       );
@@ -332,8 +382,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   }
 
   Widget _buildContactInfoSection() {
-    final hasPhone = widget.place.phone != null && widget.place.phone!.isNotEmpty;
-    final hasWebsite = widget.place.website != null && widget.place.website!.isNotEmpty;
+    final hasPhone =
+        widget.place.phone != null && widget.place.phone!.isNotEmpty;
+    final hasWebsite =
+        widget.place.website != null && widget.place.website!.isNotEmpty;
     final hasCategories = widget.place.categories.isNotEmpty;
 
     if (!hasPhone && !hasWebsite && !hasCategories) {
@@ -364,7 +416,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               children: widget.place.categories.map((category) {
                 return Chip(
                   label: Text(category, style: const TextStyle(fontSize: 12)),
-                  backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.secondaryContainer,
                   side: BorderSide.none,
                   visualDensity: VisualDensity.compact,
                 );
@@ -375,7 +429,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           if (hasPhone) ...[
             Row(
               children: [
-                Icon(Icons.phone, size: 20, color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  Icons.phone,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -390,12 +448,19 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           if (hasWebsite) ...[
             Row(
               children: [
-                Icon(Icons.language, size: 20, color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  Icons.language,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     widget.place.website!,
-                    style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.primary),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -411,18 +476,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   Widget _buildCalendarOptions() {
     return SegmentedButton<CalendarViewType>(
       segments: const [
-        ButtonSegment(
-          value: CalendarViewType.singleDay,
-          label: Text('1 Day'),
-        ),
-        ButtonSegment(
-          value: CalendarViewType.threeDay,
-          label: Text('3 Days'),
-        ),
-        ButtonSegment(
-          value: CalendarViewType.week,
-          label: Text('Week'),
-        ),
+        ButtonSegment(value: CalendarViewType.singleDay, label: Text('1 Day')),
+        ButtonSegment(value: CalendarViewType.threeDay, label: Text('3 Days')),
+        ButtonSegment(value: CalendarViewType.week, label: Text('Week')),
       ],
       selected: <CalendarViewType>{_currentView},
       onSelectionChanged: (Set<CalendarViewType> selection) {
@@ -432,16 +488,18 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         });
       },
       showSelectedIcon: false,
-      style: const ButtonStyle(
-        visualDensity: VisualDensity.compact,
-      ),
+      style: const ButtonStyle(visualDensity: VisualDensity.compact),
     );
   }
 
   Widget _buildAddressSection() {
     final addressParts = widget.place.address.split(', ');
-    final String line1 = addressParts.isNotEmpty ? addressParts[0] : widget.place.address;
-    final String line2 = addressParts.length > 1 ? addressParts.skip(1).join(', ') : '';
+    final String line1 = addressParts.isNotEmpty
+        ? addressParts[0]
+        : widget.place.address;
+    final String line2 = addressParts.length > 1
+        ? addressParts.skip(1).join(', ')
+        : '';
 
     return Container(
       decoration: BoxDecoration(
@@ -466,7 +524,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: 18, color: Theme.of(context).colorScheme.primary),
+                    Icon(
+                      Icons.location_on,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       'Address',
@@ -481,7 +543,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                 const SizedBox(height: 8),
                 Text(
                   line1,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 if (line2.isNotEmpty) ...[
                   const SizedBox(height: 4),
@@ -492,7 +557,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                       color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
                   ),
-                ]
+                ],
               ],
             ),
           ),
@@ -576,17 +641,30 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Average Visit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text(
+                  'Average Visit',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
                 Text(
                   'Tap calendar to see if it fits, double tap to remove',
-                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
           ),
           DropdownButton<int?>(
             value: _savedPlace!.averageVisitLength,
-            items: durations.map((d) => DropdownMenuItem(value: d, child: Text(formatDuration(d)))).toList(),
+            items: durations
+                .map(
+                  (d) => DropdownMenuItem(
+                    value: d,
+                    child: Text(formatDuration(d)),
+                  ),
+                )
+                .toList(),
             onChanged: (val) async {
               try {
                 final apiService = context.read<ApiService>();
@@ -610,7 +688,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Failed to update visit length'), backgroundColor: Colors.red),
+                    const SnackBar(
+                      content: Text('Failed to update visit length'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }
@@ -633,7 +714,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       return const SizedBox.shrink(); // Not saved -> don't show picker
     }
 
-    final currentColorHex = _selectedColor ?? _savedPlace!.color ?? Colors.blue.toARGB32().toRadixString(16);
+    final currentColorHex =
+        _selectedColor ??
+        _savedPlace!.color ??
+        Colors.blue.toARGB32().toRadixString(16);
     final currentColor = Color(int.parse(currentColorHex, radix: 16));
     final currentIconName = _selectedIcon ?? _savedPlace!.icon ?? 'star';
 
@@ -675,16 +759,22 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                   children: [
                     const Text(
                       'Profile Graphic',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
-                    if (_savedPlace?.customName != null && _savedPlace!.customName!.isNotEmpty) ...[
+                    if (_savedPlace?.customName != null &&
+                        _savedPlace!.customName!.isNotEmpty) ...[
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           '—  ${_savedPlace!.customName!}',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                             fontStyle: FontStyle.italic,
                           ),
                           maxLines: 1,
@@ -696,7 +786,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                 ),
               ),
               IconButton(
-                icon: Icon(_isEditingGraphic ? Icons.close : Icons.edit, size: 20),
+                icon: Icon(
+                  _isEditingGraphic ? Icons.close : Icons.edit,
+                  size: 20,
+                ),
                 onPressed: () {
                   setState(() {
                     _isEditingGraphic = !_isEditingGraphic;
@@ -719,7 +812,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: _availableColors.map((color) {
-                  final isSelected = color.toARGB32() == currentColor.toARGB32();
+                  final isSelected =
+                      color.toARGB32() == currentColor.toARGB32();
                   return GestureDetector(
                     onTap: () {
                       setState(() {
@@ -733,9 +827,19 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                       decoration: BoxDecoration(
                         color: color,
                         shape: BoxShape.circle,
-                        border: isSelected ? Border.all(color: Theme.of(context).colorScheme.onSurface, width: 2) : null,
+                        border: isSelected
+                            ? Border.all(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                width: 2,
+                              )
+                            : null,
                         boxShadow: isSelected
-                            ? [const BoxShadow(color: Colors.black26, blurRadius: 4)]
+                            ? [
+                                const BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 4,
+                                ),
+                              ]
                             : null,
                       ),
                     ),
@@ -761,13 +865,19 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                       margin: const EdgeInsets.only(right: 8),
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: isSelected ? currentColor.withValues(alpha: 0.2) : Colors.transparent,
+                        color: isSelected
+                            ? currentColor.withValues(alpha: 0.2)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
-                        border: isSelected ? Border.all(color: currentColor) : Border.all(color: Colors.transparent),
+                        border: isSelected
+                            ? Border.all(color: currentColor)
+                            : Border.all(color: Colors.transparent),
                       ),
                       child: Icon(
                         entry.value,
-                        color: isSelected ? currentColor : Theme.of(context).iconTheme.color,
+                        color: isSelected
+                            ? currentColor
+                            : Theme.of(context).iconTheme.color,
                       ),
                     ),
                   );
@@ -813,7 +923,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => _updateGraphic(icon: _selectedIcon, color: _selectedColor, customName: _labelController.text),
+                onPressed: () => _updateGraphic(
+                  icon: _selectedIcon,
+                  color: _selectedColor,
+                  customName: _labelController.text,
+                ),
                 icon: const Icon(Icons.save),
                 label: const Text('Save Profile'),
                 style: ElevatedButton.styleFrom(
@@ -827,10 +941,16 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     );
   }
 
-  Widget _buildTimeLineLabel(DateTime date, bool use24HourFormat, Color labelColor) {
+  Widget _buildTimeLineLabel(
+    DateTime date,
+    bool use24HourFormat,
+    Color labelColor,
+  ) {
     final timeString = use24HourFormat
         ? "${date.hour.toString().padLeft(2, '0')}:00"
-        : DateFormat('h a').format(DateTime(date.year, date.month, date.day, date.hour));
+        : DateFormat(
+            'h a',
+          ).format(DateTime(date.year, date.month, date.day, date.hour));
     final label = Center(
       child: Text(
         timeString,
@@ -865,7 +985,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     return label;
   }
 
-  Widget _buildCalendar(Color textColor, Color textSmallColor, bool use24HourFormat) {
+  Widget _buildCalendar(
+    Color textColor,
+    Color textSmallColor,
+    bool use24HourFormat,
+  ) {
     List<WeekDays> weekDays = WeekDays.values;
     String headerText = "";
     int daysToAdvance = 0;
@@ -889,7 +1013,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     }
 
     final now = DateTime.now();
-    final initialScrollOffset = (now.hour * 60.0 + now.minute) * 1.0; // 1.0 is heightPerMinute
+    final initialScrollOffset =
+        (now.hour * 60.0 + now.minute) * 1.0; // 1.0 is heightPerMinute
 
     Widget calendarWidget;
     if (_currentView == CalendarViewType.singleDay) {
@@ -914,14 +1039,18 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         showLiveTimeLineInAllDays: true,
         onDateTap: (date) {
           if (_savedPlace?.averageVisitLength != null) {
-            final visitEnd = date.add(Duration(minutes: _savedPlace!.averageVisitLength!));
+            final visitEnd = date.add(
+              Duration(minutes: _savedPlace!.averageVisitLength!),
+            );
             if (_isOpenDuring(date, visitEnd)) {
               setState(() => _plannedVisitTime = date);
             } else {
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Planned visit must be entirely within open business hours'),
+                  content: Text(
+                    'Planned visit must be entirely within open business hours',
+                  ),
                   backgroundColor: Colors.orange,
                   duration: Duration(seconds: 2),
                 ),
@@ -937,7 +1066,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           color: Theme.of(context).colorScheme.primary,
         ),
         timeLineBuilder: (date) => _buildTimeLineLabel(
-          date, use24HourFormat,
+          date,
+          use24HourFormat,
           Theme.of(context).textTheme.bodySmall?.color ?? textSmallColor,
         ),
       );
@@ -975,41 +1105,47 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           color: Theme.of(context).colorScheme.primary,
           showBullet: false,
         ),
-        weekDetectorBuilder: ({
-          required DateTime date,
-          required double height,
-          required double width,
-          required double heightPerMinute,
-          required MinuteSlotSize minuteSlotSize,
-        }) {
-          return _WeekDayColumnWithDot(
-            date: date,
-            height: height,
-            width: width,
-            heightPerMinute: heightPerMinute,
-            minuteSlotSize: minuteSlotSize,
-            onDateTap: (tappedDate) {
-              if (_savedPlace?.averageVisitLength != null) {
-                final visitEnd = tappedDate.add(Duration(minutes: _savedPlace!.averageVisitLength!));
-                if (_isOpenDuring(tappedDate, visitEnd)) {
-                  setState(() => _plannedVisitTime = tappedDate);
-                } else {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Planned visit must be entirely within open business hours'),
-                      backgroundColor: Colors.orange,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              }
+        weekDetectorBuilder:
+            ({
+              required DateTime date,
+              required double height,
+              required double width,
+              required double heightPerMinute,
+              required MinuteSlotSize minuteSlotSize,
+            }) {
+              return _WeekDayColumnWithDot(
+                date: date,
+                height: height,
+                width: width,
+                heightPerMinute: heightPerMinute,
+                minuteSlotSize: minuteSlotSize,
+                onDateTap: (tappedDate) {
+                  if (_savedPlace?.averageVisitLength != null) {
+                    final visitEnd = tappedDate.add(
+                      Duration(minutes: _savedPlace!.averageVisitLength!),
+                    );
+                    if (_isOpenDuring(tappedDate, visitEnd)) {
+                      setState(() => _plannedVisitTime = tappedDate);
+                    } else {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Planned visit must be entirely within open business hours',
+                          ),
+                          backgroundColor: Colors.orange,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  }
+                },
+                dotColor: Theme.of(context).colorScheme.primary,
+              );
             },
-            dotColor: Theme.of(context).colorScheme.primary,
-          );
-        },
         timeLineBuilder: (date) => _buildTimeLineLabel(
-          date, use24HourFormat,
+          date,
+          use24HourFormat,
           Theme.of(context).textTheme.bodySmall?.color ?? textSmallColor,
         ),
         weekDayBuilder: (date) {
@@ -1017,11 +1153,15 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           return Center(
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-              decoration: isToday ? BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
-              ) : null,
+              decoration: isToday
+                  ? BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.4),
+                      ),
+                    )
+                  : null,
               child: Text(
                 _weekDayShortName(date.weekday),
                 style: TextStyle(
@@ -1048,7 +1188,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                   icon: const Icon(Icons.chevron_left),
                   onPressed: () {
                     setState(() {
-                      _baseDate = _baseDate.subtract(Duration(days: daysToAdvance));
+                      _baseDate = _baseDate.subtract(
+                        Duration(days: daysToAdvance),
+                      );
                     });
                   },
                 )
@@ -1058,7 +1200,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                 child: Text(
                   headerText,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               if (showNavigation)
@@ -1100,7 +1245,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black;
     final textSmallColor = isDark ? Colors.white70 : Colors.black87;
-    final use24HourFormat = context.watch<PreferencesCubit>().state.use24HourFormat;
+    final use24HourFormat = context
+        .watch<PreferencesCubit>()
+        .state
+        .use24HourFormat;
 
     return Scaffold(
       appBar: AppBar(
@@ -1183,7 +1331,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isMobile = constraints.maxWidth < 800;
-          
+
           Widget detailsContent = SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -1208,10 +1356,14 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                     if (isMobile) ...[
                       IconButton(
                         icon: Icon(
-                          _isCalendarMinimized ? Icons.expand_less : Icons.minimize,
+                          _isCalendarMinimized
+                              ? Icons.expand_less
+                              : Icons.minimize,
                           size: 24,
                         ),
-                        tooltip: _isCalendarMinimized ? 'Show calendar' : 'Minimize calendar',
+                        tooltip: _isCalendarMinimized
+                            ? 'Show calendar'
+                            : 'Minimize calendar',
                         onPressed: () => setState(() {
                           _isCalendarMinimized = !_isCalendarMinimized;
                           if (_isCalendarMinimized) _isCalendarExpanded = false;
@@ -1225,10 +1377,14 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                     if (isMobile) ...[
                       IconButton(
                         icon: Icon(
-                          _isCalendarExpanded ? Icons.fullscreen_exit : Icons.fullscreen,
+                          _isCalendarExpanded
+                              ? Icons.fullscreen_exit
+                              : Icons.fullscreen,
                           size: 24,
                         ),
-                        tooltip: _isCalendarExpanded ? 'Collapse calendar' : 'Expand calendar',
+                        tooltip: _isCalendarExpanded
+                            ? 'Collapse calendar'
+                            : 'Expand calendar',
                         onPressed: () => setState(() {
                           _isCalendarExpanded = !_isCalendarExpanded;
                           if (_isCalendarExpanded) _isCalendarMinimized = false;
@@ -1241,7 +1397,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               ),
               if (!_isCalendarMinimized)
                 Expanded(
-                  child: _buildCalendar(textColor, textSmallColor, use24HourFormat),
+                  child: _buildCalendar(
+                    textColor,
+                    textSmallColor,
+                    use24HourFormat,
+                  ),
                 ),
             ],
           );
@@ -1254,9 +1414,12 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                   Expanded(
                     flex: _isCalendarMinimized ? 1 : 0,
                     child: Container(
-                      constraints: _isCalendarMinimized ? null : BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height * 0.3,
-                      ),
+                      constraints: _isCalendarMinimized
+                          ? null
+                          : BoxConstraints(
+                              maxHeight:
+                                  MediaQuery.of(context).size.height * 0.3,
+                            ),
                       child: detailsContent,
                     ),
                   ),
@@ -1321,23 +1484,25 @@ class StackEventArranger<T extends Object?> extends EventArranger<T> {
       var bottom = height - (endOffset * heightPerMinute);
 
       // If the event crosses midnight (endTime is on the next day)
-      // or endTime is actually 00:00:00 (which is parsed as the same day but 0th hour, 
-      // making endOffset negative or smaller than startOffset), 
+      // or endTime is actually 00:00:00 (which is parsed as the same day but 0th hour,
+      // making endOffset negative or smaller than startOffset),
       // it extends to the end of the day.
       if (endTime.day != startTime.day || bottom > (height - top)) {
         bottom = 0.0;
       }
 
-      arrangedEvents.add(OrganizedCalendarEventData<T>(
-        calendarViewDate: calendarViewDate,
-        startDuration: startTime,
-        endDuration: endTime,
-        top: top,
-        bottom: bottom,
-        left: 0.0,
-        right: 0.0,
-        events: [event],
-      ));
+      arrangedEvents.add(
+        OrganizedCalendarEventData<T>(
+          calendarViewDate: calendarViewDate,
+          startDuration: startTime,
+          endDuration: endTime,
+          top: top,
+          bottom: bottom,
+          left: 0.0,
+          right: 0.0,
+          events: [event],
+        ),
+      );
     }
 
     return arrangedEvents;
@@ -1392,7 +1557,8 @@ class _WeekDayColumnWithDotState extends State<_WeekDayColumnWithDot> {
   @override
   Widget build(BuildContext context) {
     final isToday = DateUtils.isSameDay(widget.date, DateTime.now());
-    final heightPerSlot = widget.minuteSlotSize.minutes * widget.heightPerMinute;
+    final heightPerSlot =
+        widget.minuteSlotSize.minutes * widget.heightPerMinute;
     final slots = (24 * 60) ~/ widget.minuteSlotSize.minutes;
 
     return SizedBox(
@@ -1424,7 +1590,8 @@ class _WeekDayColumnWithDotState extends State<_WeekDayColumnWithDot> {
           // Time indicator dot for today only
           if (isToday)
             Positioned(
-              top: (_currentTime.hour * 60 + _currentTime.minute) *
+              top:
+                  (_currentTime.hour * 60 + _currentTime.minute) *
                       widget.heightPerMinute -
                   5,
               left: 0,

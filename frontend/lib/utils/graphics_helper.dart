@@ -17,17 +17,17 @@ class GraphicsHelper {
   };
 
   static Widget buildProfileGraphic(SavedPlace savedPlace, {double size = 40}) {
-    final currentColorHex = savedPlace.color ?? Colors.blue.value.toRadixString(16);
-    final currentColor = Color(int.parse(currentColorHex, radix: 16)).withOpacity(1.0);
+    final currentColorHex =
+        savedPlace.color ?? Colors.blue.toARGB32().toRadixString(16);
+    final currentColor = Color(
+      int.parse(currentColorHex, radix: 16),
+    ).withValues(alpha: 1.0);
     final currentIconName = savedPlace.icon ?? 'star';
 
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: currentColor,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: currentColor, shape: BoxShape.circle),
       child: Icon(
         availableIcons[currentIconName] ?? Icons.star,
         color: Colors.white,

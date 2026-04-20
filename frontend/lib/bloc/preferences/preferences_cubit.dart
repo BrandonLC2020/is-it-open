@@ -4,13 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class PreferencesState {
   final bool use24HourFormat;
 
-  const PreferencesState({
-    required this.use24HourFormat,
-  });
+  const PreferencesState({required this.use24HourFormat});
 
-  PreferencesState copyWith({
-    bool? use24HourFormat,
-  }) {
+  PreferencesState copyWith({bool? use24HourFormat}) {
     return PreferencesState(
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
     );

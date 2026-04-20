@@ -28,7 +28,9 @@ class MyApp extends StatelessWidget {
                   ..add(AppStarted()),
           ),
           BlocProvider<ThemeCubit>(create: (context) => ThemeCubit()),
-          BlocProvider<PreferencesCubit>(create: (context) => PreferencesCubit()),
+          BlocProvider<PreferencesCubit>(
+            create: (context) => PreferencesCubit(),
+          ),
         ],
         child: CalendarControllerProvider(
           controller: EventController(),

@@ -42,11 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF1A237E),
-                Color(0xFF0D47A1),
-                Color(0xFF01579B),
-              ],
+              colors: [Color(0xFF1A237E), Color(0xFF0D47A1), Color(0xFF01579B)],
             ),
           ),
           child: SafeArea(
@@ -199,10 +195,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       labelStyle: const TextStyle(color: Colors.white70),
       prefixIcon: Icon(icon, color: Colors.white70),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.1),
+      fillColor: Colors.white.withValues(alpha: 0.1),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

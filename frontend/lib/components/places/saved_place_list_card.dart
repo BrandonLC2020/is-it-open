@@ -52,13 +52,15 @@ class SavedPlaceListCard extends StatelessWidget {
               color: savedPlace.isCheckItOut
                   ? Theme.of(context).colorScheme.primary
                   : Theme.of(context).colorScheme.onSurfaceVariant,
-              tooltip: savedPlace.isCheckItOut ? 'Mark as Visited' : 'Check It Out',
+              tooltip: savedPlace.isCheckItOut
+                  ? 'Mark as Visited'
+                  : 'Check It Out',
               onPressed: () async {
                 try {
                   await context.read<ApiService>().toggleCheckItOut(
-                        savedPlace.place.tomtomId,
-                        !savedPlace.isCheckItOut,
-                      );
+                    savedPlace.place.tomtomId,
+                    !savedPlace.isCheckItOut,
+                  );
                   onRefresh();
                 } catch (e) {
                   if (context.mounted) {

@@ -49,7 +49,10 @@ class SavedPlaceGridCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        GraphicsHelper.buildProfileGraphic(savedPlace, size: 32),
+                        GraphicsHelper.buildProfileGraphic(
+                          savedPlace,
+                          size: 32,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -81,7 +84,6 @@ class SavedPlaceGridCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                children: [
                   IconButton(
                     icon: Icon(
                       savedPlace.isCheckItOut
@@ -94,13 +96,15 @@ class SavedPlaceGridCard extends StatelessWidget {
                     iconSize: 20,
                     constraints: const BoxConstraints(),
                     padding: const EdgeInsets.only(right: 12),
-                    tooltip: savedPlace.isCheckItOut ? 'Mark as Visited' : 'Check It Out',
+                    tooltip: savedPlace.isCheckItOut
+                        ? 'Mark as Visited'
+                        : 'Check It Out',
                     onPressed: () async {
                       try {
                         await context.read<ApiService>().toggleCheckItOut(
-                              savedPlace.place.tomtomId,
-                              !savedPlace.isCheckItOut,
-                            );
+                          savedPlace.place.tomtomId,
+                          !savedPlace.isCheckItOut,
+                        );
                         onRefresh();
                       } catch (e) {
                         if (context.mounted) {

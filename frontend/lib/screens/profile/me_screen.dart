@@ -201,7 +201,9 @@ class _MeScreenState extends State<MeScreen> {
                           ),
                           const SizedBox(height: 16),
                           TextFormField(
-                            controller: TextEditingController(text: user.username),
+                            controller: TextEditingController(
+                              text: user.username,
+                            ),
                             decoration: const InputDecoration(
                               labelText: 'Username',
                               border: OutlineInputBorder(),

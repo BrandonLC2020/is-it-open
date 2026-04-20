@@ -23,7 +23,7 @@ class _MapScreenState extends State<MapScreen> {
   List<SavedPlace> _savedPlaces = [];
   bool _isLoadingPlaces = true;
   final Set<String> _checkedPlaceIds = {};
-  
+
   // Toggles
   bool _showPinnedLocations = true;
 
@@ -81,10 +81,14 @@ class _MapScreenState extends State<MapScreen> {
       permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return useDefaultLocation();
+        if (permission == LocationPermission.denied) {
+          return useDefaultLocation();
+        }
       }
 
-      if (permission == LocationPermission.deniedForever) return useDefaultLocation();
+      if (permission == LocationPermission.deniedForever) {
+        return useDefaultLocation();
+      }
 
       Position position = await Geolocator.getCurrentPosition();
       if (mounted) {
@@ -130,7 +134,9 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   String _displayName(SavedPlace sp) {
-    if (sp.customName != null && sp.customName!.isNotEmpty) return sp.customName!;
+    if (sp.customName != null && sp.customName!.isNotEmpty) {
+      return sp.customName!;
+    }
     return sp.place.name;
   }
 
@@ -146,7 +152,11 @@ class _MapScreenState extends State<MapScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.bookmark_border, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.bookmark_border,
+                size: 48,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(height: 12),
               Text(
                 'No saved places yet',
@@ -196,10 +206,7 @@ class _MapScreenState extends State<MapScreen> {
           secondary: Container(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             child: Icon(iconData, color: Colors.white, size: 20),
           ),
           title: Row(
@@ -218,7 +225,9 @@ class _MapScreenState extends State<MapScreen> {
                   child: Icon(
                     Icons.push_pin,
                     size: 14,
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.7),
                   ),
                 ),
             ],
@@ -344,10 +353,7 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     return FlutterMap(
-      options: MapOptions(
-        initialCenter: _currentLocation!,
-        initialZoom: 13.0,
-      ),
+      options: MapOptions(initialCenter: _currentLocation!, initialZoom: 13.0),
       children: [
         TileLayer(
           urlTemplate: Theme.of(context).brightness == Brightness.dark
@@ -371,62 +377,64 @@ class _MapScreenState extends State<MapScreen> {
     Widget sidebarContent = SafeArea(
       child: ListView(
         children: [
-        SwitchListTile(
-          title: const Text('Show Pinned Locations'),
-          subtitle: const Text('Automatically show markers for all pinned places'),
-          value: _showPinnedLocations,
-          onChanged: (val) {
-            setState(() {
-              _showPinnedLocations = val;
-              if (val) {
-                for (final sp in _savedPlaces) {
-                  if (sp.isPinned) _checkedPlaceIds.add(sp.place.tomtomId);
+          SwitchListTile(
+            title: const Text('Show Pinned Locations'),
+            subtitle: const Text(
+              'Automatically show markers for all pinned places',
+            ),
+            value: _showPinnedLocations,
+            onChanged: (val) {
+              setState(() {
+                _showPinnedLocations = val;
+                if (val) {
+                  for (final sp in _savedPlaces) {
+                    if (sp.isPinned) _checkedPlaceIds.add(sp.place.tomtomId);
+                  }
+                } else {
+                  for (final sp in _savedPlaces) {
+                    if (sp.isPinned) _checkedPlaceIds.remove(sp.place.tomtomId);
+                  }
                 }
-              } else {
-                for (final sp in _savedPlaces) {
-                  if (sp.isPinned) _checkedPlaceIds.remove(sp.place.tomtomId);
-                }
-              }
-            });
-          },
-        ),
-        const Divider(),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Row(
-            children: [
-              Text(
-                'My Places',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
+              });
+            },
+          ),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Row(
+              children: [
+                Text(
+                  'My Places',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              if (_checkedPlaceIds.isNotEmpty)
+                const Spacer(),
+                if (_checkedPlaceIds.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.layers_clear, size: 18),
+                    tooltip: 'Hide All',
+                    onPressed: () {
+                      setState(() {
+                        _checkedPlaceIds.clear();
+                        _showPinnedLocations = false;
+                      });
+                    },
+                  ),
                 IconButton(
-                  icon: const Icon(Icons.layers_clear, size: 18),
-                  tooltip: 'Hide All',
+                  icon: const Icon(Icons.refresh, size: 18),
                   onPressed: () {
-                    setState(() {
-                      _checkedPlaceIds.clear();
-                      _showPinnedLocations = false;
-                    });
+                    setState(() => _isLoadingPlaces = true);
+                    _loadSavedPlaces();
                   },
                 ),
-              IconButton(
-                icon: const Icon(Icons.refresh, size: 18),
-                onPressed: () {
-                  setState(() => _isLoadingPlaces = true);
-                  _loadSavedPlaces();
-                },
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        _buildPlacesSidebar(),
-      ],
+          _buildPlacesSidebar(),
+        ],
       ),
     );
 
@@ -450,15 +458,9 @@ class _MapScreenState extends State<MapScreen> {
           ? _buildMap()
           : Row(
               children: [
-                Expanded(
-                  flex: 2,
-                  child: _buildMap(),
-                ),
+                Expanded(flex: 2, child: _buildMap()),
                 const VerticalDivider(width: 1),
-                Expanded(
-                  flex: 1,
-                  child: sidebarContent,
-                ),
+                Expanded(flex: 1, child: sidebarContent),
               ],
             ),
     );

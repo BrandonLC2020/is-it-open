@@ -183,7 +183,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         value: user.useCurrentLocation,
                         onChanged: _isUpdating
                             ? null
-                            : (value) => _handleCurrentLocationToggle(value, user),
+                            : (value) =>
+                                  _handleCurrentLocationToggle(value, user),
                       ),
                       if (_isUpdating)
                         const Padding(
@@ -205,7 +206,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             value: prefsState.use24HourFormat,
                             onChanged: (value) {
-                              context.read<PreferencesCubit>().toggle24HourFormat(value);
+                              context
+                                  .read<PreferencesCubit>()
+                                  .toggle24HourFormat(value);
                             },
                           );
                         },

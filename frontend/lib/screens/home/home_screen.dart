@@ -6,7 +6,6 @@ import 'package:frontend/screens/calendar/calendar_screen.dart';
 import '../../components/shared/side_menu.dart';
 import 'package:frontend/screens/profile/me_screen.dart';
 
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -36,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 800;
-        
+
         return Scaffold(
           body: Stack(
             children: [
@@ -46,9 +45,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xFF1A237E).withValues(alpha: 0.1), // Deep Blue
+                      const Color(
+                        0xFF1A237E,
+                      ).withValues(alpha: 0.1), // Deep Blue
                       const Color(0xFF0D47A1).withValues(alpha: 0.1), // Blue
-                      const Color(0xFF880E4F).withValues(alpha: 0.1), // Pink/Purple accent
+                      const Color(
+                        0xFF880E4F,
+                      ).withValues(alpha: 0.1), // Pink/Purple accent
                     ],
                   ),
                 ),
@@ -78,15 +81,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: _onItemTapped,
                   type: BottomNavigationBarType.fixed,
                   selectedItemColor: Theme.of(context).primaryColor,
-                  unselectedItemColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  unselectedItemColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
                   backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                   elevation: 8,
                   items: const [
-                    BottomNavigationBarItem(icon: Icon(Icons.star), label: 'Places'),
-                    BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: 'Calendar'),
-                    BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
-                    BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-                    BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.star),
+                      label: 'Places',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.calendar_month),
+                      label: 'Calendar',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.map),
+                      label: 'Map',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.search),
+                      label: 'Search',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.person),
+                      label: 'Profile',
+                    ),
                   ],
                 )
               : null,

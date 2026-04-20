@@ -195,17 +195,19 @@ class ApiService {
     }
   }
 
-  Future<void> updateBookmarkGraphic(String tomtomId, String? icon, String? color, {String? customName}) async {
+  Future<void> updateBookmarkGraphic(
+    String tomtomId,
+    String? icon,
+    String? color, {
+    String? customName,
+  }) async {
     try {
       final Map<String, dynamic> data = {};
       if (icon != null) data['icon'] = icon;
       if (color != null) data['color'] = color;
       if (customName != null) data['custom_name'] = customName;
-      
-      await _dio.patch(
-        '/places/bookmarks/$tomtomId/graphic',
-        data: data,
-      );
+
+      await _dio.patch('/places/bookmarks/$tomtomId/graphic', data: data);
     } on DioException catch (e) {
       throw Exception(
         'Failed to update graphic: ${e.response?.data ?? e.message}',

@@ -16,7 +16,7 @@ void main() {
       'is_pinned': false,
       'is_check_it_out': true,
     };
-    
+
     final savedPlace = SavedPlace.fromJson(json);
     expect(savedPlace.isCheckItOut, true);
   });

@@ -103,7 +103,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             startTime: DateTime.parse(e['startTime']),
             endTime: DateTime.parse(e['endTime']),
             description: e['description'],
-            color: Colors.teal.withOpacity(0.5),
+            color: Colors.teal.withValues(alpha: 0.5),
           );
         }).toList();
         if (mounted) {
@@ -150,7 +150,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       final apiService = context.read<ApiService>();
       final icsString = await apiService.getCalendarFromUrl(url);
       final iCalendar = ICalendar.fromString(icsString);
-      
+
       final List<CalendarEventData<Object?>> events = [];
       for (final entry in iCalendar.data) {
         if (entry['type'] == 'VEVENT') {
@@ -162,30 +162,35 @@ class _CalendarScreenState extends State<CalendarScreen> {
           if (dtstart != null) {
             final isAllDay = _isAllDayIcsDateTime(dtstart);
             final start = dtstart.toDateTime();
-            final end = dtend?.toDateTime() ?? start?.add(const Duration(hours: 1));
-            
+            final end =
+                dtend?.toDateTime() ?? start?.add(const Duration(hours: 1));
+
             if (start != null) {
               if (isAllDay) {
                 // All-day event: omit startTime/endTime for header display
                 final endDate = end != null
                     ? end.subtract(const Duration(days: 1))
                     : start;
-                events.add(CalendarEventData(
-                  title: title,
-                  date: start,
-                  endDate: endDate,
-                  description: description,
-                  color: Colors.deepPurple.withOpacity(0.5),
-                ));
+                events.add(
+                  CalendarEventData(
+                    title: title,
+                    date: start,
+                    endDate: endDate,
+                    description: description,
+                    color: Colors.deepPurple.withValues(alpha: 0.5),
+                  ),
+                );
               } else {
-                events.add(CalendarEventData(
-                  title: title,
-                  date: start,
-                  startTime: start,
-                  endTime: end ?? start,
-                  description: description,
-                  color: Colors.deepPurple.withOpacity(0.5),
-                ));
+                events.add(
+                  CalendarEventData(
+                    title: title,
+                    date: start,
+                    startTime: start,
+                    endTime: end ?? start,
+                    description: description,
+                    color: Colors.deepPurple.withValues(alpha: 0.5),
+                  ),
+                );
               }
             }
           }
@@ -206,14 +211,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Future<void> _updateSubscriptionUrl(String url) async {
     final authState = context.read<AuthBloc>().state;
     if (authState is! AuthAuthenticated) return;
-    
+
     final updatedUser = User(
       id: authState.user.id,
       username: authState.user.username,
       calendarSubscriptionUrl: url,
     );
-    
-    context.read<AuthBloc>().add(ProfileUpdateRequested(updatedUser: updatedUser));
+
+    context.read<AuthBloc>().add(
+      ProfileUpdateRequested(updatedUser: updatedUser),
+    );
   }
 
   Future<void> _initDeviceCalendar({bool fromButton = false}) async {
@@ -290,8 +297,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     for (final cal in _deviceCalendars) {
       if (cal.id != null) {
         calendarColorMap[cal.id!] = cal.color != null
-            ? Color(cal.color!).withOpacity(0.7)
-            : Colors.blue.withOpacity(0.7);
+            ? Color(cal.color!).withValues(alpha: 0.7)
+            : Colors.blue.withValues(alpha: 0.7);
       }
     }
 
@@ -302,7 +309,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     List<CalendarEventData<Object?>> allEvents = [];
 
     for (final calendarId in _checkedCalendarIds) {
-      final calColor = calendarColorMap[calendarId] ?? Colors.blue.withOpacity(0.7);
+      final calColor =
+          calendarColorMap[calendarId] ?? Colors.blue.withValues(alpha: 0.7);
 
       final eventsResult = await _deviceCalendarPlugin.retrieveEvents(
         calendarId,
@@ -315,22 +323,26 @@ class _CalendarScreenState extends State<CalendarScreen> {
             if (event.allDay == true) {
               // Full-day event: omit startTime/endTime so calendar_view
               // treats it as a full-day event shown in the header area.
-              allEvents.add(CalendarEventData(
-                title: event.title ?? 'No Title',
-                date: event.start!,
-                endDate: event.end!.subtract(const Duration(days: 1)),
-                description: event.description,
-                color: calColor,
-              ));
+              allEvents.add(
+                CalendarEventData(
+                  title: event.title ?? 'No Title',
+                  date: event.start!,
+                  endDate: event.end!.subtract(const Duration(days: 1)),
+                  description: event.description,
+                  color: calColor,
+                ),
+              );
             } else {
-              allEvents.add(CalendarEventData(
-                title: event.title ?? 'No Title',
-                date: event.start!,
-                startTime: event.start!,
-                endTime: event.end!,
-                description: event.description,
-                color: calColor,
-              ));
+              allEvents.add(
+                CalendarEventData(
+                  title: event.title ?? 'No Title',
+                  date: event.start!,
+                  startTime: event.start!,
+                  endTime: event.end!,
+                  description: event.description,
+                  color: calColor,
+                ),
+              );
             }
           }
         }
@@ -356,7 +368,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       if (result != null && result.files.single.bytes != null) {
         final icsString = utf8.decode(result.files.single.bytes!);
         final iCalendar = ICalendar.fromString(icsString);
-        
+
         final List<CalendarEventData<Object?>> events = [];
         for (final entry in iCalendar.data) {
           if (entry['type'] == 'VEVENT') {
@@ -368,29 +380,34 @@ class _CalendarScreenState extends State<CalendarScreen> {
             if (dtstart != null) {
               final isAllDay = _isAllDayIcsDateTime(dtstart);
               final start = dtstart.toDateTime();
-              final end = dtend?.toDateTime() ?? start?.add(const Duration(hours: 1));
-              
+              final end =
+                  dtend?.toDateTime() ?? start?.add(const Duration(hours: 1));
+
               if (start != null) {
                 if (isAllDay) {
                   final endDate = end != null
                       ? end.subtract(const Duration(days: 1))
                       : start;
-                  events.add(CalendarEventData(
-                    title: title,
-                    date: start,
-                    endDate: endDate,
-                    description: description,
-                    color: Colors.teal.withOpacity(0.5),
-                  ));
+                  events.add(
+                    CalendarEventData(
+                      title: title,
+                      date: start,
+                      endDate: endDate,
+                      description: description,
+                      color: Colors.teal.withValues(alpha: 0.5),
+                    ),
+                  );
                 } else {
-                  events.add(CalendarEventData(
-                    title: title,
-                    date: start,
-                    startTime: start,
-                    endTime: end ?? start,
-                    description: description,
-                    color: Colors.teal.withOpacity(0.5),
-                  ));
+                  events.add(
+                    CalendarEventData(
+                      title: title,
+                      date: start,
+                      startTime: start,
+                      endTime: end ?? start,
+                      description: description,
+                      color: Colors.teal.withValues(alpha: 0.5),
+                    ),
+                  );
                 }
               }
             }
@@ -402,16 +419,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
             _importedEvents = events;
             _persistImportedEvents();
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Imported ${events.length} events successfully!')),
+              SnackBar(
+                content: Text('Imported ${events.length} events successfully!'),
+              ),
             );
           });
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error importing iCal: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error importing iCal: $e')));
       }
     } finally {
       if (mounted) {
@@ -449,7 +468,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   // ── Displayed name ────────────────────────────────────────────
   String _displayName(SavedPlace sp) {
-    if (sp.customName != null && sp.customName!.isNotEmpty) return sp.customName!;
+    if (sp.customName != null && sp.customName!.isNotEmpty) {
+      return sp.customName!;
+    }
     return sp.place.name;
   }
 
@@ -457,8 +478,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
   EventController<Object?> _buildEventController() {
     final controller = EventController<Object?>();
     final now = DateTime.now();
-    final startOfWeek = DateTime(now.year, now.month, now.day)
-        .subtract(Duration(days: now.weekday - 1));
+    final startOfWeek = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
 
     int colorIndex = 0;
     for (final sp in _savedPlaces) {
@@ -467,7 +491,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         continue;
       }
 
-      final color = _colorForPlace(sp, colorIndex).withOpacity(0.7);
+      final color = _colorForPlace(sp, colorIndex).withValues(alpha: 0.7);
       final label = _displayName(sp);
 
       for (int weekOffset = -4; weekOffset <= 12; weekOffset++) {
@@ -493,13 +517,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
             endTime = endTime.add(const Duration(days: 1));
           }
 
-          controller.add(CalendarEventData(
-            title: label,
-            date: baseDate,
-            startTime: startTime,
-            endTime: endTime,
-            color: color,
-          ));
+          controller.add(
+            CalendarEventData(
+              title: label,
+              date: baseDate,
+              startTime: startTime,
+              endTime: endTime,
+              color: color,
+            ),
+          );
         }
       }
       colorIndex++;
@@ -556,10 +582,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           if (event.description != null && event.description!.isNotEmpty)
             Text(
               event.description!,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 9,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 9),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -610,12 +633,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   // ── Time line label ───────────────────────────────────────────
-  Widget _buildTimeLineLabel(DateTime date, bool use24HourFormat, Color labelColor) {
+  Widget _buildTimeLineLabel(
+    DateTime date,
+    bool use24HourFormat,
+    Color labelColor,
+  ) {
     final timeString = use24HourFormat
         ? "${date.hour.toString().padLeft(2, '0')}:00"
-        : DateFormat('h a').format(DateTime(date.year, date.month, date.day, date.hour));
+        : DateFormat(
+            'h a',
+          ).format(DateTime(date.year, date.month, date.day, date.hour));
     final label = Center(
-      child: Text(timeString, style: TextStyle(color: labelColor, fontSize: 12)),
+      child: Text(
+        timeString,
+        style: TextStyle(color: labelColor, fontSize: 12),
+      ),
     );
 
     if (date.hour == 1) {
@@ -630,7 +662,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
             left: 0,
             right: 0,
             child: Center(
-              child: Text(midnightString, style: TextStyle(color: labelColor, fontSize: 12)),
+              child: Text(
+                midnightString,
+                style: TextStyle(color: labelColor, fontSize: 12),
+              ),
             ),
           ),
         ],
@@ -675,7 +710,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
       return '${_formatHeaderDate(_baseDate)} – ${_formatHeaderDate(endDate)}, ${DateFormat('yyyy').format(endDate)}';
     } else {
       // Week view: show Mon – Sun range
-      final weekStart = _baseDate.subtract(Duration(days: _baseDate.weekday - 1));
+      final weekStart = _baseDate.subtract(
+        Duration(days: _baseDate.weekday - 1),
+      );
       final weekEnd = weekStart.add(const Duration(days: 6));
       if (weekStart.month == weekEnd.month) {
         return '${_formatHeaderDate(weekStart)} – ${weekEnd.day}, ${DateFormat('yyyy').format(weekEnd)}';
@@ -685,7 +722,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   // ── Calendar widget ───────────────────────────────────────────
-  Widget _buildCalendar(Color textColor, Color textSmallColor, bool use24HourFormat) {
+  Widget _buildCalendar(
+    Color textColor,
+    Color textSmallColor,
+    bool use24HourFormat,
+  ) {
     List<WeekDays> weekDays = WeekDays.values;
     int daysToAdvance = 0;
 
@@ -704,10 +745,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     final now = DateTime.now();
     final initialScrollOffset = (now.hour * 60.0 + now.minute) * 1.0;
-    final isShowingToday = DateUtils.isSameDay(_baseDate, now) ||
+    final isShowingToday =
+        DateUtils.isSameDay(_baseDate, now) ||
         (_currentView == CalendarViewType.week &&
-            _baseDate.subtract(Duration(days: _baseDate.weekday - 1)).isBefore(now) &&
-            _baseDate.subtract(Duration(days: _baseDate.weekday - 1)).add(const Duration(days: 7)).isAfter(now));
+            _baseDate
+                .subtract(Duration(days: _baseDate.weekday - 1))
+                .isBefore(now) &&
+            _baseDate
+                .subtract(Duration(days: _baseDate.weekday - 1))
+                .add(const Duration(days: 7))
+                .isAfter(now));
 
     Widget calendarWidget;
     if (_currentView == CalendarViewType.singleDay) {
@@ -723,14 +770,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
         pageViewPhysics: const NeverScrollableScrollPhysics(),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         headerStyle: HeaderStyle(
-          decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
         ),
         eventArranger: const _StackEventArranger(),
         eventTileBuilder: _buildEventTile,
         fullDayEventBuilder: _buildFullDayEventWidget,
         showLiveTimeLineInAllDays: true,
         dayTitleBuilder: (date) => const SizedBox.shrink(),
-        hourIndicatorSettings: HourIndicatorSettings(color: Theme.of(context).dividerColor),
+        hourIndicatorSettings: HourIndicatorSettings(
+          color: Theme.of(context).dividerColor,
+        ),
         liveTimeIndicatorSettings: LiveTimeIndicatorSettings(
           color: Theme.of(context).colorScheme.primary,
         ),
@@ -742,7 +793,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
       );
     } else {
       calendarWidget = WeekView(
-        key: ValueKey('week_${_baseDate}_${_currentView}_${_checkedPlaceIds.length}'),
+        key: ValueKey(
+          'week_${_baseDate}_${_currentView}_${_checkedPlaceIds.length}',
+        ),
         controller: _buildEventController(),
         minDay: _baseDate.subtract(const Duration(days: 28)),
         maxDay: _baseDate.add(const Duration(days: 84)),
@@ -757,7 +810,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
         pageViewPhysics: const NeverScrollableScrollPhysics(),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         headerStyle: HeaderStyle(
-          decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+          ),
         ),
         weekTitleBackgroundColor: const Color(0xFF1565C0),
         eventArranger: const _StackEventArranger(),
@@ -766,7 +821,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
         showLiveTimeLineInAllDays: true,
         weekPageHeaderBuilder: (start, end) => const SizedBox.shrink(),
         weekNumberBuilder: (date) => const SizedBox.shrink(),
-        hourIndicatorSettings: HourIndicatorSettings(color: Theme.of(context).dividerColor),
+        hourIndicatorSettings: HourIndicatorSettings(
+          color: Theme.of(context).dividerColor,
+        ),
         liveTimeIndicatorSettings: LiveTimeIndicatorSettings(
           color: Theme.of(context).colorScheme.primary,
           showBullet: false,
@@ -783,9 +840,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
               decoration: isToday
                   ? BoxDecoration(
-                      color: Colors.white.withOpacity(0.25),
+                      color: Colors.white.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.4)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
                     )
                   : null,
               child: Column(
@@ -825,7 +882,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 icon: const Icon(Icons.chevron_left),
                 onPressed: () {
                   setState(() {
-                    _baseDate = _baseDate.subtract(Duration(days: daysToAdvance));
+                    _baseDate = _baseDate.subtract(
+                      Duration(days: daysToAdvance),
+                    );
                   });
                 },
               ),
@@ -833,7 +892,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 child: Text(
                   _buildHeaderText(),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               IconButton(
@@ -857,11 +919,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
           child: Theme(
             data: Theme.of(context).copyWith(
               colorScheme: Theme.of(context).colorScheme.copyWith(
-                    secondaryContainer: Theme.of(context).scaffoldBackgroundColor,
-                    primaryContainer: Theme.of(context).scaffoldBackgroundColor,
-                    surface: Theme.of(context).scaffoldBackgroundColor,
-                    error: Colors.transparent,
-                  ),
+                secondaryContainer: Theme.of(context).scaffoldBackgroundColor,
+                primaryContainer: Theme.of(context).scaffoldBackgroundColor,
+                surface: Theme.of(context).scaffoldBackgroundColor,
+                error: Colors.transparent,
+              ),
               canvasColor: Theme.of(context).scaffoldBackgroundColor,
               cardColor: Theme.of(context).scaffoldBackgroundColor,
               secondaryHeaderColor: Theme.of(context).scaffoldBackgroundColor,
@@ -886,7 +948,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.bookmark_border, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.bookmark_border,
+                size: 48,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(height: 12),
               Text(
                 'No saved places yet',
@@ -927,10 +993,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           secondary: Container(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             child: Icon(iconData, color: Colors.white, size: 20),
           ),
           title: Text(
@@ -953,14 +1016,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Icon(Icons.devices_other, size: 32, color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5)),
+            Icon(
+              Icons.devices_other,
+              size: 32,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
             const SizedBox(height: 8),
             Text(
               'Device sync is available on Mobile only. For Web/Desktop, consider cloud sync (coming soon).',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -989,13 +1060,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
 
     if (_isLoadingCalendars) {
-      return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()));
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
     if (_deviceCalendars.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(16.0),
-        child: Text('No calendars found on this device.', textAlign: TextAlign.center),
+        child: Text(
+          'No calendars found on this device.',
+          textAlign: TextAlign.center,
+        ),
       );
     }
 
@@ -1024,10 +1103,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           secondary: Container(
             width: 12,
             height: 12,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           title: Text(
             cal.name ?? 'Unnamed Calendar',
@@ -1049,7 +1125,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black;
     final textSmallColor = isDark ? Colors.white70 : Colors.black87;
-    final use24HourFormat = context.watch<PreferencesCubit>().state.use24HourFormat;
+    final use24HourFormat = context
+        .watch<PreferencesCubit>()
+        .state
+        .use24HourFormat;
     final isMobile = MediaQuery.of(context).size.width < 800;
 
     Widget sidebarContent = ListView(
@@ -1131,8 +1210,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   tooltip: 'Clear Imported',
                 ),
               IconButton(
-                icon: _isImporting 
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                icon: _isImporting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Icon(Icons.file_upload, size: 18),
                 onPressed: _isImporting ? null : _importIcalFile,
                 tooltip: 'Import .ics file',
@@ -1148,13 +1231,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           )
         else
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             child: Text(
               'Displaying ${_importedEvents.length} imported events.',
               style: const TextStyle(fontSize: 13),
@@ -1190,14 +1278,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 // ── Calendar view (left 2/3) ──
                 Expanded(
                   flex: 2,
-                  child: _buildCalendar(textColor, textSmallColor, use24HourFormat),
+                  child: _buildCalendar(
+                    textColor,
+                    textSmallColor,
+                    use24HourFormat,
+                  ),
                 ),
                 const VerticalDivider(width: 1),
                 // ── Sidebar (right 1/3) ──
-                Expanded(
-                  flex: 1,
-                  child: sidebarContent,
-                ),
+                Expanded(flex: 1, child: sidebarContent),
               ],
             ),
     );
@@ -1205,7 +1294,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   Widget _buildRemoteSubscriptionSidebar() {
     final authState = context.watch<AuthBloc>().state;
-    final url = authState is AuthAuthenticated ? authState.user.calendarSubscriptionUrl : null;
+    final url = authState is AuthAuthenticated
+        ? authState.user.calendarSubscriptionUrl
+        : null;
     final hasUrl = url != null && url.isNotEmpty;
 
     return Column(
@@ -1227,7 +1318,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
               if (hasUrl)
                 IconButton(
                   icon: _isLoadingRemote
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Icon(Icons.sync, size: 18),
                   onPressed: _isLoadingRemote ? null : _fetchRemoteCalendar,
                 ),
@@ -1246,13 +1341,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           )
         else
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 4.0,
+            ),
             child: Text(
               'Syncing with ${_remoteEvents.length} events.',
               style: const TextStyle(fontSize: 13),
@@ -1264,7 +1364,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   void _showSubscriptionDialog() {
     final authState = context.read<AuthBloc>().state;
-    final currentUrl = authState is AuthAuthenticated ? authState.user.calendarSubscriptionUrl : '';
+    final currentUrl = authState is AuthAuthenticated
+        ? authState.user.calendarSubscriptionUrl
+        : '';
     final controller = TextEditingController(text: currentUrl);
 
     showDialog(
@@ -1339,16 +1441,18 @@ class _StackEventArranger<T extends Object?> extends EventArranger<T> {
         bottom = 0.0;
       }
 
-      arrangedEvents.add(OrganizedCalendarEventData<T>(
-        calendarViewDate: calendarViewDate,
-        startDuration: startTime,
-        endDuration: endTime,
-        top: top,
-        bottom: bottom,
-        left: 0.0,
-        right: 0.0,
-        events: [event],
-      ));
+      arrangedEvents.add(
+        OrganizedCalendarEventData<T>(
+          calendarViewDate: calendarViewDate,
+          startDuration: startTime,
+          endDuration: endTime,
+          top: top,
+          bottom: bottom,
+          left: 0.0,
+          right: 0.0,
+          events: [event],
+        ),
+      );
     }
 
     return arrangedEvents;

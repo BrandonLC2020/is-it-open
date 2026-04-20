@@ -117,7 +117,7 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
                       ),
                     ),
                   ),
-                    _isGridView
+                  _isGridView
                         ? SliverPadding(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             sliver: SliverGrid(
@@ -150,7 +150,6 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
                               );
                             }, childCount: pinnedPlaces.length),
                           ),
-                  ],
                   if (unpinnedPlaces.isNotEmpty) ...[
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -165,7 +164,7 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
                         ),
                       ),
                     ),
-                    _isGridView
+                  _isGridView
                         ? SliverPadding(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             sliver: SliverGrid(
