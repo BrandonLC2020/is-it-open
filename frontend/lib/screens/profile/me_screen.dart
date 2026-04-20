@@ -226,9 +226,9 @@ class _MeScreenState extends State<MeScreen> {
                                             .textTheme
                                             .headlineMedium
                                             ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
                                               fontWeight: FontWeight.bold,
                                             ),
                                       ),
@@ -374,33 +374,31 @@ class _MeScreenState extends State<MeScreen> {
                                 width: double.infinity,
                                 height: 56,
                                 child: ElevatedButton(
-                                  onPressed:
-                                      state is AuthLoading
-                                          ? null
-                                          : () => _saveProfile(user),
+                                  onPressed: state is AuthLoading
+                                      ? null
+                                      : () => _saveProfile(user),
                                   style: ElevatedButton.styleFrom(
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     elevation: 2,
                                   ),
-                                  child:
-                                      state is AuthLoading
-                                          ? const SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
-                                            ),
-                                          )
-                                          : const Text(
-                                            'Save Profile',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                  child: state is AuthLoading
+                                      ? const SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
                                           ),
+                                        )
+                                      : const Text(
+                                          'Save Profile',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
                                 ),
                               ),
                               const SizedBox(height: 16),

@@ -3,12 +3,14 @@ import 'calendar_ui_state.dart';
 
 class CalendarUiCubit extends Cubit<CalendarUiState> {
   CalendarUiCubit({DateTime? initialDate})
-      : super(CalendarUiState(
+    : super(
+        CalendarUiState(
           currentView: CalendarViewType.week,
           baseDate: initialDate ?? DateTime.now(),
           isCalendarExpanded: false,
           isCalendarMinimized: false,
-        ));
+        ),
+      );
 
   void changeViewType(CalendarViewType type) {
     emit(state.copyWith(currentView: type, baseDate: DateTime.now()));
@@ -19,16 +21,20 @@ class CalendarUiCubit extends Cubit<CalendarUiState> {
   }
 
   void toggleExpanded() {
-    emit(state.copyWith(
-      isCalendarExpanded: !state.isCalendarExpanded,
-      isCalendarMinimized: false,
-    ));
+    emit(
+      state.copyWith(
+        isCalendarExpanded: !state.isCalendarExpanded,
+        isCalendarMinimized: false,
+      ),
+    );
   }
 
   void toggleMinimized() {
-    emit(state.copyWith(
-      isCalendarMinimized: !state.isCalendarMinimized,
-      isCalendarExpanded: false,
-    ));
+    emit(
+      state.copyWith(
+        isCalendarMinimized: !state.isCalendarMinimized,
+        isCalendarExpanded: false,
+      ),
+    );
   }
 }

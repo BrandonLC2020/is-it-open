@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:frontend/bloc/calendar/calendar_ui_cubit.dart';
-import 'package:frontend/bloc/calendar/calendar_ui_state.dart' show CalendarViewType, CalendarUiState;
+import 'package:frontend/bloc/calendar/calendar_ui_state.dart'
+    show CalendarViewType, CalendarUiState;
 
 void main() {
   group('CalendarUiCubit', () {
@@ -50,7 +51,7 @@ void main() {
           baseDate: now.add(const Duration(days: 1)),
           isCalendarExpanded: false,
           isCalendarMinimized: false,
-        )
+        ),
       ],
     );
 
@@ -64,7 +65,7 @@ void main() {
           baseDate: now,
           isCalendarExpanded: true,
           isCalendarMinimized: false,
-        )
+        ),
       ],
     );
 
@@ -78,7 +79,7 @@ void main() {
           baseDate: now,
           isCalendarExpanded: false,
           isCalendarMinimized: true,
-        )
+        ),
       ],
     );
   });

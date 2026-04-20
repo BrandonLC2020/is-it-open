@@ -7,10 +7,7 @@ import '../../bloc/calendar/calendar_ui_cubit.dart';
 class CalendarHeaderWidget extends StatelessWidget {
   final CalendarViewType currentView;
 
-  const CalendarHeaderWidget({
-    super.key,
-    required this.currentView,
-  });
+  const CalendarHeaderWidget({super.key, required this.currentView});
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +31,10 @@ String _formatHeaderDate(DateTime date) {
   return DateFormat('MMM d').format(date);
 }
 
-String buildCalendarHeaderText(CalendarViewType currentView, DateTime baseDate) {
+String buildCalendarHeaderText(
+  CalendarViewType currentView,
+  DateTime baseDate,
+) {
   if (currentView == CalendarViewType.singleDay) {
     return DateFormat('EEEE, MMM d, yyyy').format(baseDate);
   } else if (currentView == CalendarViewType.threeDay) {

@@ -30,5 +30,10 @@ class CalendarUiState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [currentView, baseDate, isCalendarExpanded, isCalendarMinimized];
+  List<Object?> get props => [
+    currentView,
+    baseDate,
+    isCalendarExpanded,
+    isCalendarMinimized,
+  ];
 }

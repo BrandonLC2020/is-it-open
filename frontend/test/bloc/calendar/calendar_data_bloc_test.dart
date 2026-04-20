@@ -40,7 +40,10 @@ void main() {
       act: (bloc) => bloc.add(LoadSavedPlaces()),
       expect: () => [
         const CalendarDataState(status: CalendarDataStatus.loading),
-        const CalendarDataState(status: CalendarDataStatus.loaded, savedPlaces: []),
+        const CalendarDataState(
+          status: CalendarDataStatus.loaded,
+          savedPlaces: [],
+        ),
       ],
     );
 
@@ -49,9 +52,7 @@ void main() {
       build: () => bloc,
       seed: () => const CalendarDataState(checkedPlaceIds: {'123'}),
       act: (bloc) => bloc.add(const TogglePlaceFilter('123')),
-      expect: () => [
-        const CalendarDataState(checkedPlaceIds: {}),
-      ],
+      expect: () => [const CalendarDataState(checkedPlaceIds: {})],
     );
   });
 }

@@ -86,9 +86,11 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
 
             final allPlaces = snapshot.data!;
             List<SavedPlace> places = allPlaces;
-            if (_filterIndex == 1) { // Want to Visit
+            if (_filterIndex == 1) {
+              // Want to Visit
               places = allPlaces.where((p) => p.isCheckItOut).toList();
-            } else if (_filterIndex == 2) { // Visited
+            } else if (_filterIndex == 2) {
+              // Visited
               places = allPlaces.where((p) => !p.isCheckItOut).toList();
             }
 
@@ -101,7 +103,10 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
                 slivers: [
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 8.0,
+                      ),
                       child: SegmentedButton<int>(
                         segments: const [
                           ButtonSegment(value: 0, label: Text('All')),
@@ -118,38 +123,38 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
                     ),
                   ),
                   _isGridView
-                        ? SliverPadding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            sliver: SliverGrid(
-                              gridDelegate:
-                                  const SliverGridDelegateWithMaxCrossAxisExtent(
-                                    maxCrossAxisExtent: 300,
-                                    mainAxisExtent: 140,
-                                    crossAxisSpacing: 8,
-                                    mainAxisSpacing: 8,
-                                  ),
-                              delegate: SliverChildBuilderDelegate((
-                                context,
-                                index,
-                              ) {
-                                return SavedPlaceGridCard(
-                                  savedPlace: pinnedPlaces[index],
-                                  onRefresh: _refreshBookmarks,
-                                );
-                              }, childCount: pinnedPlaces.length),
-                            ),
-                          )
-                        : SliverList(
+                      ? SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          sliver: SliverGrid(
+                            gridDelegate:
+                                const SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 300,
+                                  mainAxisExtent: 140,
+                                  crossAxisSpacing: 8,
+                                  mainAxisSpacing: 8,
+                                ),
                             delegate: SliverChildBuilderDelegate((
                               context,
                               index,
                             ) {
-                              return SavedPlaceListCard(
+                              return SavedPlaceGridCard(
                                 savedPlace: pinnedPlaces[index],
                                 onRefresh: _refreshBookmarks,
                               );
                             }, childCount: pinnedPlaces.length),
                           ),
+                        )
+                      : SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            return SavedPlaceListCard(
+                              savedPlace: pinnedPlaces[index],
+                              onRefresh: _refreshBookmarks,
+                            );
+                          }, childCount: pinnedPlaces.length),
+                        ),
                   if (unpinnedPlaces.isNotEmpty) ...[
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -164,7 +169,7 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
                         ),
                       ),
                     ),
-                  _isGridView
+                    _isGridView
                         ? SliverPadding(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             sliver: SliverGrid(

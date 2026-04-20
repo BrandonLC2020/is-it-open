@@ -52,10 +52,11 @@ class CalendarDataState extends Equatable {
       deviceCalendars: deviceCalendars ?? this.deviceCalendars,
       deviceEvents: deviceEvents ?? this.deviceEvents,
       checkedCalendarIds: checkedCalendarIds ?? this.checkedCalendarIds,
-      hasCalendarPermission: hasCalendarPermission ?? this.hasCalendarPermission,
+      hasCalendarPermission:
+          hasCalendarPermission ?? this.hasCalendarPermission,
       importedEvents: importedEvents ?? this.importedEvents,
       remoteEvents: remoteEvents ?? this.remoteEvents,
-      errorMessage: errorMessage, 
+      errorMessage: errorMessage,
       isLoadingRemote: isLoadingRemote ?? this.isLoadingRemote,
     );
   }
@@ -79,16 +80,16 @@ class CalendarDataState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        savedPlaces,
-        checkedPlaceIds,
-        deviceCalendars,
-        deviceEvents,
-        checkedCalendarIds,
-        hasCalendarPermission,
-        importedEvents,
-        remoteEvents,
-        errorMessage,
-        isLoadingRemote,
-      ];
+    status,
+    savedPlaces,
+    checkedPlaceIds,
+    deviceCalendars,
+    deviceEvents,
+    checkedCalendarIds,
+    hasCalendarPermission,
+    importedEvents,
+    remoteEvents,
+    errorMessage,
+    isLoadingRemote,
+  ];
 }

@@ -15,7 +15,8 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
   final ApiService apiService;
   final DeviceCalendarPlugin _deviceCalendarPlugin = DeviceCalendarPlugin();
 
-  CalendarDataBloc({required this.apiService}) : super(const CalendarDataState()) {
+  CalendarDataBloc({required this.apiService})
+    : super(const CalendarDataState()) {
     on<LoadSavedPlaces>(_onLoadSavedPlaces);
     on<TogglePlaceFilter>(_onTogglePlaceFilter);
     on<InitDeviceCalendar>(_onInitDeviceCalendar);
@@ -28,17 +29,33 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
     add(LoadPersistedImportedEvents());
   }
 
-  Future<void> _onLoadSavedPlaces(LoadSavedPlaces event, Emitter<CalendarDataState> emit) async {
+  Future<void> _onLoadSavedPlaces(
+    LoadSavedPlaces event,
+    Emitter<CalendarDataState> emit,
+  ) async {
     emit(state.clearError().copyWith(status: CalendarDataStatus.loading));
     try {
       final bookmarks = await apiService.getBookmarks();
-      emit(state.copyWith(status: CalendarDataStatus.loaded, savedPlaces: bookmarks));
+      emit(
+        state.copyWith(
+          status: CalendarDataStatus.loaded,
+          savedPlaces: bookmarks,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(status: CalendarDataStatus.error, errorMessage: 'Failed to load places: $e'));
+      emit(
+        state.copyWith(
+          status: CalendarDataStatus.error,
+          errorMessage: 'Failed to load places: $e',
+        ),
+      );
     }
   }
 
-  void _onTogglePlaceFilter(TogglePlaceFilter event, Emitter<CalendarDataState> emit) {
+  void _onTogglePlaceFilter(
+    TogglePlaceFilter event,
+    Emitter<CalendarDataState> emit,
+  ) {
     final updatedIds = Set<String>.from(state.checkedPlaceIds);
     if (updatedIds.contains(event.tomtomId)) {
       updatedIds.remove(event.tomtomId);
@@ -48,7 +65,10 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
     emit(state.clearError().copyWith(checkedPlaceIds: updatedIds));
   }
 
-  Future<void> _onInitDeviceCalendar(InitDeviceCalendar event, Emitter<CalendarDataState> emit) async {
+  Future<void> _onInitDeviceCalendar(
+    InitDeviceCalendar event,
+    Emitter<CalendarDataState> emit,
+  ) async {
     if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
 
     try {
@@ -64,26 +84,39 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
           emit(state.copyWith(deviceCalendars: calendarsResult.data!));
         }
       } else if (event.fromButton) {
-        emit(state.copyWith(errorMessage: 'Calendar permission denied. Please enable in Settings.'));
+        emit(
+          state.copyWith(
+            errorMessage:
+                'Calendar permission denied. Please enable in Settings.',
+          ),
+        );
       }
     } catch (e) {
-      emit(state.copyWith(errorMessage: 'Error initializing device calendar: $e'));
+      emit(
+        state.copyWith(errorMessage: 'Error initializing device calendar: $e'),
+      );
     }
   }
 
-  Future<void> _onToggleDeviceCalendar(ToggleDeviceCalendar event, Emitter<CalendarDataState> emit) async {
+  Future<void> _onToggleDeviceCalendar(
+    ToggleDeviceCalendar event,
+    Emitter<CalendarDataState> emit,
+  ) async {
     final updatedIds = Set<String>.from(state.checkedCalendarIds);
     if (updatedIds.contains(event.calendarId)) {
       updatedIds.remove(event.calendarId);
     } else {
       updatedIds.add(event.calendarId);
     }
-    
+
     emit(state.clearError().copyWith(checkedCalendarIds: updatedIds));
     await _fetchDeviceEvents(updatedIds, emit);
   }
 
-  Future<void> _fetchDeviceEvents(Set<String> activeIds, Emitter<CalendarDataState> emit) async {
+  Future<void> _fetchDeviceEvents(
+    Set<String> activeIds,
+    Emitter<CalendarDataState> emit,
+  ) async {
     if (activeIds.isEmpty) {
       emit(state.copyWith(deviceEvents: []));
       return;
@@ -105,7 +138,8 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
     List<CalendarEventData<Object?>> allEvents = [];
 
     for (final calendarId in activeIds) {
-      final calColor = calendarColorMap[calendarId] ?? Colors.blue.withValues(alpha: 0.7);
+      final calColor =
+          calendarColorMap[calendarId] ?? Colors.blue.withValues(alpha: 0.7);
 
       final eventsResult = await _deviceCalendarPlugin.retrieveEvents(
         calendarId,
@@ -148,7 +182,10 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
     return !dt.dt.contains('T');
   }
 
-  List<CalendarEventData<Object?>> _parseIcsString(String icsString, Color eventColor) {
+  List<CalendarEventData<Object?>> _parseIcsString(
+    String icsString,
+    Color eventColor,
+  ) {
     final iCalendar = ICalendar.fromString(icsString);
     final List<CalendarEventData<Object?>> events = [];
     for (final entry in iCalendar.data) {
@@ -161,27 +198,34 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
         if (dtstart != null) {
           final isAllDay = _isAllDayIcsDateTime(dtstart);
           final start = dtstart.toDateTime();
-          final end = dtend?.toDateTime() ?? start?.add(const Duration(hours: 1));
+          final end =
+              dtend?.toDateTime() ?? start?.add(const Duration(hours: 1));
 
           if (start != null) {
             if (isAllDay) {
-              final endDate = end != null ? end.subtract(const Duration(days: 1)) : start;
-              events.add(CalendarEventData(
-                title: title,
-                date: start,
-                endDate: endDate,
-                description: description,
-                color: eventColor,
-              ));
+              final endDate = end != null
+                  ? end.subtract(const Duration(days: 1))
+                  : start;
+              events.add(
+                CalendarEventData(
+                  title: title,
+                  date: start,
+                  endDate: endDate,
+                  description: description,
+                  color: eventColor,
+                ),
+              );
             } else {
-              events.add(CalendarEventData(
-                title: title,
-                date: start,
-                startTime: start,
-                endTime: end ?? start,
-                description: description,
-                color: eventColor,
-              ));
+              events.add(
+                CalendarEventData(
+                  title: title,
+                  date: start,
+                  startTime: start,
+                  endTime: end ?? start,
+                  description: description,
+                  color: eventColor,
+                ),
+              );
             }
           }
         }
@@ -190,9 +234,15 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
     return events;
   }
 
-  void _onImportIcalFile(ImportIcalFile event, Emitter<CalendarDataState> emit) {
+  void _onImportIcalFile(
+    ImportIcalFile event,
+    Emitter<CalendarDataState> emit,
+  ) {
     try {
-      final events = _parseIcsString(event.icsString, Colors.teal.withValues(alpha: 0.5));
+      final events = _parseIcsString(
+        event.icsString,
+        Colors.teal.withValues(alpha: 0.5),
+      );
       emit(state.clearError().copyWith(importedEvents: events));
       _persistImportedEvents(events);
     } catch (e) {
@@ -200,24 +250,41 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
     }
   }
 
-  void _onClearImportedEvents(ClearImportedEvents event, Emitter<CalendarDataState> emit) {
+  void _onClearImportedEvents(
+    ClearImportedEvents event,
+    Emitter<CalendarDataState> emit,
+  ) {
     emit(state.clearError().copyWith(importedEvents: []));
     _persistImportedEvents([]);
   }
 
-  Future<void> _onLoadRemoteEvents(LoadRemoteEvents event, Emitter<CalendarDataState> emit) async {
+  Future<void> _onLoadRemoteEvents(
+    LoadRemoteEvents event,
+    Emitter<CalendarDataState> emit,
+  ) async {
     if (event.url.isEmpty) return;
     emit(state.clearError().copyWith(isLoadingRemote: true));
     try {
       final icsString = await apiService.getCalendarFromUrl(event.url);
-      final events = _parseIcsString(icsString, Colors.deepPurple.withValues(alpha: 0.5));
+      final events = _parseIcsString(
+        icsString,
+        Colors.deepPurple.withValues(alpha: 0.5),
+      );
       emit(state.copyWith(remoteEvents: events, isLoadingRemote: false));
     } catch (e) {
-      emit(state.copyWith(errorMessage: 'Error fetching remote calendar: $e', isLoadingRemote: false));
+      emit(
+        state.copyWith(
+          errorMessage: 'Error fetching remote calendar: $e',
+          isLoadingRemote: false,
+        ),
+      );
     }
   }
 
-  Future<void> _onLoadPersistedImportedEvents(LoadPersistedImportedEvents event, Emitter<CalendarDataState> emit) async {
+  Future<void> _onLoadPersistedImportedEvents(
+    LoadPersistedImportedEvents event,
+    Emitter<CalendarDataState> emit,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? eventsJson = prefs.getString('persisted_imported_events');
@@ -227,7 +294,9 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
           return CalendarEventData(
             title: e['title'],
             date: DateTime.parse(e['date']),
-            startTime: e['startTime'] != null ? DateTime.parse(e['startTime']) : null,
+            startTime: e['startTime'] != null
+                ? DateTime.parse(e['startTime'])
+                : null,
             endTime: e['endTime'] != null ? DateTime.parse(e['endTime']) : null,
             description: e['description'],
             color: Colors.teal.withValues(alpha: 0.5),
@@ -239,9 +308,9 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
       debugPrint('Error loading persisted events: $e');
     }
   }
-  
+
   Future<void> _persistImportedEvents(List<CalendarEventData> events) async {
-     try {
+    try {
       final prefs = await SharedPreferences.getInstance();
       final List<Map<String, dynamic>> toStore = events.map((e) {
         return {
