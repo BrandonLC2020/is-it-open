@@ -5,6 +5,7 @@ import 'dart:convert' show utf8;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:calendar_view/calendar_view.dart';
 import '../../components/calendar/calendar_event_tile.dart';
+import '../../components/calendar/calendar_header.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../models/saved_place.dart';
 import '../../services/api_service.dart';
@@ -396,7 +397,7 @@ class _CalendarScreenContent extends StatelessWidget {
                       ),
                       Expanded(
                         child: Text(
-                          _buildHeaderText(uiState.currentView, uiState.baseDate),
+                          buildCalendarHeaderText(uiState.currentView, uiState.baseDate),
                           textAlign: TextAlign.center,
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
