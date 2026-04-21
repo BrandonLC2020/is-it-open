@@ -16,8 +16,8 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  LatLng? _currentLocation;
-  bool _isLoadingLocation = true;
+  LatLng? _currentLocation = const LatLng(40.7128, -74.0060); // Default to NYC
+  bool _isLoadingLocation = false; // Start with false to show map immediately
 
   // Saved places state
   List<SavedPlace> _savedPlaces = [];
@@ -26,6 +26,9 @@ class _MapScreenState extends State<MapScreen> {
 
   // Toggles
   bool _showPinnedLocations = true;
+
+  // Map Controller for dynamic panning
+  final MapController _mapController = MapController();
 
   static const List<Color> _defaultPalette = [
     Colors.blue,
@@ -92,10 +95,13 @@ class _MapScreenState extends State<MapScreen> {
 
       Position position = await Geolocator.getCurrentPosition();
       if (mounted) {
+        final newLocation = LatLng(position.latitude, position.longitude);
         setState(() {
-          _currentLocation = LatLng(position.latitude, position.longitude);
+          _currentLocation = newLocation;
           _isLoadingLocation = false;
         });
+        // Pan to the real user location once found
+        _mapController.move(newLocation, 13.0);
       }
     } catch (e) {
       useDefaultLocation();
@@ -353,6 +359,7 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     return FlutterMap(
+      mapController: _mapController,
       options: MapOptions(initialCenter: _currentLocation!, initialZoom: 13.0),
       children: [
         TileLayer(
@@ -368,9 +375,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoadingLocation) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    // Blocking loading removed
 
     final isMobile = MediaQuery.of(context).size.width < 800;
 
