@@ -11,6 +11,7 @@ import '../../bloc/calendar/calendar_ui_cubit.dart';
 import '../../bloc/calendar/calendar_ui_state.dart';
 import '../../bloc/calendar/calendar_data_bloc.dart';
 import '../../bloc/calendar/calendar_data_state.dart';
+import '../../utils/availability_calculator.dart';
 
 class CalendarScreen extends StatelessWidget {
   const CalendarScreen({super.key});
@@ -84,7 +85,10 @@ class _CalendarScreenContent extends StatelessWidget {
     return _defaultPalette[index % _defaultPalette.length];
   }
 
-  EventController<Object?> _buildEventController(CalendarDataState dataState) {
+  EventController<Object?> _buildEventController(
+    CalendarDataState dataState,
+    CalendarUiState uiState,
+  ) {
     final controller = EventController<Object?>();
     final now = DateTime.now();
     final startOfWeek = DateTime(
@@ -93,56 +97,83 @@ class _CalendarScreenContent extends StatelessWidget {
       now.day,
     ).subtract(Duration(days: now.weekday - 1));
 
-    int colorIndex = 0;
-    for (final sp in dataState.savedPlaces) {
-      if (!dataState.checkedPlaceIds.contains(sp.place.tomtomId)) {
-        colorIndex++;
-        continue;
-      }
+    List<CalendarEventData<Object?>> businessBlocks = [];
 
-      final color = _colorForPlace(sp, colorIndex).withValues(alpha: 0.7);
-      final label = displayName(sp);
-
-      for (int weekOffset = -4; weekOffset <= 12; weekOffset++) {
-        final weekStart = startOfWeek.add(Duration(days: weekOffset * 7));
-
-        for (final hours in sp.place.hours) {
-          final baseDate = weekStart.add(Duration(days: hours.dayOfWeek));
-          final startTime = DateTime(
-            baseDate.year,
-            baseDate.month,
-            baseDate.day,
-            hours.openTime.hour,
-            hours.openTime.minute,
-          );
-          var endTime = DateTime(
-            baseDate.year,
-            baseDate.month,
-            baseDate.day,
-            hours.closeTime.hour,
-            hours.closeTime.minute,
-          );
-          if (endTime.isBefore(startTime)) {
-            endTime = endTime.add(const Duration(days: 1));
-          }
-
-          controller.add(
-            CalendarEventData(
-              title: label,
-              date: baseDate,
-              startTime: startTime,
-              endTime: endTime,
-              color: color,
-            ),
-          );
+    if (uiState.showBusinessHours) {
+      int colorIndex = 0;
+      for (final sp in dataState.savedPlaces) {
+        if (!dataState.checkedPlaceIds.contains(sp.place.tomtomId)) {
+          colorIndex++;
+          continue;
         }
+
+        final color = _colorForPlace(sp, colorIndex).withValues(
+          alpha: 1.0,
+        ); // Solid for contrast
+        final label = displayName(sp);
+
+        for (int weekOffset = -4; weekOffset <= 12; weekOffset++) {
+          final weekStart = startOfWeek.add(Duration(days: weekOffset * 7));
+
+          for (final hours in sp.place.hours) {
+            final baseDate = weekStart.add(Duration(days: hours.dayOfWeek));
+            final startTime = DateTime(
+              baseDate.year,
+              baseDate.month,
+              baseDate.day,
+              hours.openTime.hour,
+              hours.openTime.minute,
+            );
+            var endTime = DateTime(
+              baseDate.year,
+              baseDate.month,
+              baseDate.day,
+              hours.closeTime.hour,
+              hours.closeTime.minute,
+            );
+            if (endTime.isBefore(startTime)) {
+              endTime = endTime.add(const Duration(days: 1));
+            }
+
+            businessBlocks.add(
+              CalendarEventData(
+                title: label,
+                date: baseDate,
+                startTime: startTime,
+                endTime: endTime,
+                color: color,
+              ),
+            );
+          }
+        }
+        colorIndex++;
       }
-      colorIndex++;
     }
 
-    controller.addAll(dataState.deviceEvents);
-    controller.addAll(dataState.importedEvents);
-    controller.addAll(dataState.remoteEvents);
+    final allPersonalEvents = [
+      ...dataState.deviceEvents,
+      ...dataState.importedEvents,
+      ...dataState.remoteEvents,
+    ];
+
+    final timedPersonalEvents =
+        allPersonalEvents
+            .where((e) => e.startTime != null && e.endTime != null)
+            .toList();
+
+    if (uiState.showBusinessHours && uiState.showPersonalEvents) {
+      final availableWindows = AvailabilityCalculator.calculateAvailableWindows(
+        businessBlocks,
+        timedPersonalEvents,
+      );
+      controller.addAll(availableWindows);
+    } else if (uiState.showBusinessHours) {
+      controller.addAll(businessBlocks);
+    }
+
+    if (uiState.showPersonalEvents) {
+      controller.addAll(allPersonalEvents);
+    }
 
     return controller;
   }
@@ -152,17 +183,15 @@ class _CalendarScreenContent extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black;
     final textSmallColor = isDark ? Colors.white70 : Colors.black87;
-    final use24HourFormat = context
-        .watch<PreferencesCubit>()
-        .state
-        .use24HourFormat;
+    final use24HourFormat =
+        context.watch<PreferencesCubit>().state.use24HourFormat;
     final isMobile = MediaQuery.of(context).size.width < 800;
 
     return BlocBuilder<CalendarUiCubit, CalendarUiState>(
       builder: (context, uiState) {
         return BlocBuilder<CalendarDataBloc, CalendarDataState>(
           builder: (context, dataState) {
-            final controller = _buildEventController(dataState);
+            final controller = _buildEventController(dataState, uiState);
 
             Widget sidebarContent = CalendarSidebarWidget(
               dataState: dataState,
