@@ -139,10 +139,41 @@ class CalendarViewStackWidget extends StatelessWidget {
             );
           }
         },
-        fullDayEventBuilder: (events, date) =>
-            FullDayEventWidget(events: events, date: date),
+        fullDayEventBuilder: (events, date) => const SizedBox.shrink(),
         showLiveTimeLineInAllDays: true,
-        dayTitleBuilder: (date) => const SizedBox.shrink(),
+        dayTitleBuilder: (date) {
+          final dayEvents = controller.getEventsOnDay(date);
+          final allDayEvents =
+              dayEvents
+                  .where((e) => e.startTime == null || e.endTime == null)
+                  .toList();
+          final hasAllDay = allDayEvents.isNotEmpty;
+
+          if (!hasAllDay) return const SizedBox.shrink();
+
+          return GestureDetector(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                builder:
+                    (context) =>
+                        _AllDayEventsSheet(date: date, events: allDayEvents),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.event_note, size: 16),
+                  const SizedBox(width: 8),
+                  Text('${allDayEvents.length} All-Day Event(s)'),
+                ],
+              ),
+            ),
+          );
+        },
         hourIndicatorSettings: HourIndicatorSettings(
           color: Theme.of(context).dividerColor,
         ),
@@ -197,8 +228,7 @@ class CalendarViewStackWidget extends StatelessWidget {
             );
           }
         },
-        fullDayEventBuilder: (events, date) =>
-            FullDayEventWidget(events: events, date: date),
+        fullDayEventBuilder: (events, date) => const SizedBox.shrink(),
         showLiveTimeLineInAllDays: true,
         weekPageHeaderBuilder: (start, end) => const SizedBox.shrink(),
         weekNumberBuilder: (date) => const SizedBox.shrink(),
@@ -216,38 +246,73 @@ class CalendarViewStackWidget extends StatelessWidget {
         ),
         weekDayBuilder: (date) {
           final isToday = DateUtils.isSameDay(date, DateTime.now());
-          return Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-              decoration: isToday
-                  ? BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.4),
+          final dayEvents = controller.getEventsOnDay(date);
+          final allDayEvents =
+              dayEvents
+                  .where((e) => e.startTime == null || e.endTime == null)
+                  .toList();
+          final hasAllDay = allDayEvents.isNotEmpty;
+
+          return GestureDetector(
+            onTap: () {
+              if (hasAllDay) {
+                showModalBottomSheet(
+                  context: context,
+                  builder:
+                      (context) =>
+                          _AllDayEventsSheet(date: date, events: allDayEvents),
+                );
+              }
+            },
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                decoration: isToday
+                    ? BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
+                      )
+                    : null,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _weekDayShortName(date.weekday),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
                       ),
-                    )
-                  : null,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _weekDayShortName(date.weekday),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  Text(
-                    '${date.month}/${date.day}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${date.month}/${date.day}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (hasAllDay) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Colors.blueAccent,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
@@ -318,6 +383,59 @@ class CalendarViewStackWidget extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _AllDayEventsSheet extends StatelessWidget {
+  final DateTime date;
+  final List<CalendarEventData<Object?>> events;
+
+  const _AllDayEventsSheet({required this.date, required this.events});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'All-Day Events for ${date.month}/${date.day}',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: events.length,
+              itemBuilder: (context, index) {
+                final event = events[index];
+                return ListTile(
+                  leading: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: event.color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  title: Text(
+                    event.title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 }
