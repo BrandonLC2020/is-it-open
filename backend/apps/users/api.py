@@ -213,74 +213,67 @@ def update_me(request, data: ProfileUpdateInput):
     home_address_changed = False
     work_address_changed = False
 
+    # Define fields that trigger geocoding
+    home_geo_fields = ['home_street', 'home_city', 'home_state', 'home_zip']
+    work_geo_fields = ['work_street', 'work_city', 'work_state', 'work_zip']
+    
     # Update UserProfile fields if provided
     profile_updated = False
-    if data.home_address is not None:
-        profile.home_address = data.home_address
-        profile_updated = True
-        home_address_changed = True
-    if data.home_street is not None:
-        profile.home_street = data.home_street
-        profile_updated = True
-        home_address_changed = True
-    if data.home_city is not None:
-        profile.home_city = data.home_city
-        profile_updated = True
-        home_address_changed = True
-    if data.home_state is not None:
-        profile.home_state = data.home_state
-        profile_updated = True
-        home_address_changed = True
-    if data.home_zip is not None:
-        profile.home_zip = data.home_zip
-        profile_updated = True
-        home_address_changed = True
-        
+    
+    # Handle home address fields
+    for field in ['home_address'] + home_geo_fields:
+        val = getattr(data, field)
+        if val is not None:
+            if val != getattr(profile, field):
+                setattr(profile, field, val)
+                profile_updated = True
+                if field in home_geo_fields or field == 'home_address':
+                    home_address_changed = True
+                    
+    # Handle work address fields
+    for field in ['work_address'] + work_geo_fields:
+        val = getattr(data, field)
+        if val is not None:
+            if val != getattr(profile, field):
+                setattr(profile, field, val)
+                profile_updated = True
+                if field in work_geo_fields or field == 'work_address':
+                    work_address_changed = True
+
     # Allow explicit lat/lng overrides from frontend
-    if data.home_lat is not None:
+    if data.home_lat is not None and data.home_lat != profile.home_lat:
         profile.home_lat = data.home_lat
         profile_updated = True
         home_address_changed = False # Don't re-geocode if explicitly provided
-    if data.home_lng is not None:
+    elif data.home_lat is not None:
+        home_address_changed = False # Still override if same value provided
+
+    if data.home_lng is not None and data.home_lng != profile.home_lng:
         profile.home_lng = data.home_lng
         profile_updated = True
         home_address_changed = False
+    elif data.home_lng is not None:
+        home_address_changed = False
 
-    if data.work_address is not None:
-        profile.work_address = data.work_address
-        profile_updated = True
-        work_address_changed = True
-    if data.work_street is not None:
-        profile.work_street = data.work_street
-        profile_updated = True
-        work_address_changed = True
-    if data.work_city is not None:
-        profile.work_city = data.work_city
-        profile_updated = True
-        work_address_changed = True
-    if data.work_state is not None:
-        profile.work_state = data.work_state
-        profile_updated = True
-        work_address_changed = True
-    if data.work_zip is not None:
-        profile.work_zip = data.work_zip
-        profile_updated = True
-        work_address_changed = True
-        
-    if data.work_lat is not None:
+    if data.work_lat is not None and data.work_lat != profile.work_lat:
         profile.work_lat = data.work_lat
         profile_updated = True
         work_address_changed = False
-    if data.work_lng is not None:
+    elif data.work_lat is not None:
+        work_address_changed = False
+
+    if data.work_lng is not None and data.work_lng != profile.work_lng:
         profile.work_lng = data.work_lng
         profile_updated = True
         work_address_changed = False
+    elif data.work_lng is not None:
+        work_address_changed = False
         
-    if data.use_current_location is not None:
+    if data.use_current_location is not None and data.use_current_location != profile.use_current_location:
         profile.use_current_location = data.use_current_location
         profile_updated = True
 
-    if data.calendar_subscription_url is not None:
+    if data.calendar_subscription_url is not None and data.calendar_subscription_url != profile.calendar_subscription_url:
         profile.calendar_subscription_url = data.calendar_subscription_url
         profile_updated = True
 

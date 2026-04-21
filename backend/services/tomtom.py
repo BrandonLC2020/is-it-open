@@ -1,6 +1,8 @@
 import requests
 from django.conf import settings
 from datetime import datetime
+from django.core.cache import cache
+import hashlib
 
 class TomTomClient:
     BASE_URL = "https://api.tomtom.com/search/2"
@@ -118,6 +120,14 @@ class TomTomClient:
         if not self.api_key or not address:
             return None
 
+        # Create a stable cache key
+        address_hash = hashlib.md5(address.strip().lower().encode('utf-8')).hexdigest()
+        cache_key = f"geocode_{address_hash}"
+        
+        cached_result = cache.get(cache_key)
+        if cached_result:
+            return cached_result
+
         url = f"{self.BASE_URL}/geocode/{address}.json"
         params = {
             "key": self.api_key,
@@ -133,7 +143,10 @@ class TomTomClient:
                 lat = position.get('lat')
                 lon = position.get('lon')
                 if lat is not None and lon is not None:
-                    return {'lat': lat, 'lon': lon}
+                    result = {'lat': lat, 'lon': lon}
+                    # Cache for 1 day
+                    cache.set(cache_key, result, 86400)
+                    return result
         except requests.RequestException:
             pass
         return None
