@@ -169,3 +169,6 @@ _override.tf.json
 backend/db.sqlite3
 
 .worktrees/
+
+.gemini/
+gha-creds-*.json

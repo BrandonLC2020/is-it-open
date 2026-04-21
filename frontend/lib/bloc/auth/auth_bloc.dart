@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
@@ -25,29 +26,42 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
+      final userJsonString = prefs.getString('auth_user_json');
       final username = prefs.getString('auth_username');
       final userId = prefs.getInt('auth_user_id');
       final userEmail = prefs.getString('auth_user_email');
       final calendarUrl = prefs.getString('auth_calendar_url');
 
-      if (token != null && username != null && userId != null) {
+      if (token != null) {
         apiClient.setAuthToken(token);
         try {
           final user = await apiClient.getProfile();
           await _saveUser(user);
           emit(AuthAuthenticated(user: user));
         } catch (e) {
-          emit(
-            AuthAuthenticated(
-              user: User(
-                id: userId,
-                username: username,
-                email: userEmail,
-                calendarSubscriptionUrl: calendarUrl,
-                token: token,
+          if (userJsonString != null) {
+            try {
+              final decoded =
+                  jsonDecode(userJsonString) as Map<String, dynamic>;
+              emit(AuthAuthenticated(user: User.fromJson(decoded)));
+            } catch (e2) {
+              emit(AuthUnauthenticated());
+            }
+          } else if (username != null && userId != null) {
+            emit(
+              AuthAuthenticated(
+                user: User(
+                  id: userId,
+                  username: username,
+                  email: userEmail,
+                  calendarSubscriptionUrl: calendarUrl,
+                  token: token,
+                ),
               ),
-            ),
-          );
+            );
+          } else {
+            emit(AuthUnauthenticated());
+          }
         }
       } else {
         emit(AuthUnauthenticated());
@@ -149,6 +163,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _saveUser(User user) async {
     final prefs = await SharedPreferences.getInstance();
     if (user.token != null) await prefs.setString('auth_token', user.token!);
+    await prefs.setString('auth_user_json', jsonEncode(user.toJson()));
     await prefs.setString('auth_username', user.username);
     await prefs.setInt('auth_user_id', user.id);
     if (user.email != null) {

@@ -2,6 +2,8 @@ from ninja import Router, Schema
 from typing import List, Optional
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import D
 
 from services.tomtom import TomTomClient
 from .models import Place, SavedPlace
@@ -15,17 +17,24 @@ class BusinessHoursSchema(Schema):
     open_time: str
     close_time: str
 
+class LocationSchema(Schema):
+    lat: float
+    lng: float
+
 class PlaceSchema(Schema):
     id: int
     tomtom_id: str
     name: str
     address: str
-    latitude: float
-    longitude: float
+    location: LocationSchema
     phone: Optional[str] = None
     website: Optional[str] = None
     categories: List[str] = []
     hours: List[BusinessHoursSchema] = []
+
+    @staticmethod
+    def resolve_location(obj):
+        return {"lat": obj.location.y, "lng": obj.location.x}
 
     @staticmethod
     def resolve_hours(obj):
@@ -42,8 +51,7 @@ class PlaceCreateSchema(Schema):
     tomtom_id: str
     name: str
     address: str
-    latitude: float
-    longitude: float
+    location: LocationSchema
     phone: Optional[str] = None
     website: Optional[str] = None
     categories: List[str] = []
@@ -94,8 +102,7 @@ def search_places(request, query: str):
                 "tomtom_id": place.tomtom_id,
                 "name": place.name,
                 "address": place.address,
-                "latitude": place.latitude,
-                "longitude": place.longitude,
+                "location": {"lat": place.location.y, "lng": place.location.x},
                 "phone": place.phone,
                 "website": place.website,
                 "categories": place.categories,
@@ -108,13 +115,13 @@ def search_places(request, query: str):
 @router.post("/", response=PlaceSchema)
 def create_place(request, payload: PlaceCreateSchema):
     with transaction.atomic():
+        location = Point(payload.location.lng, payload.location.lat, srid=4326)
         place, created = Place.objects.get_or_create(
             tomtom_id=payload.tomtom_id,
             defaults={
                 "name": payload.name,
                 "address": payload.address,
-                "latitude": payload.latitude,
-                "longitude": payload.longitude,
+                "location": location,
                 "phone": payload.phone,
                 "website": payload.website,
                 "categories": payload.categories,
@@ -123,6 +130,9 @@ def create_place(request, payload: PlaceCreateSchema):
         
         if not created:
             updated = False
+            if payload.location.lat != place.location.y or payload.location.lng != place.location.x:
+                place.location = location
+                updated = True
             if payload.phone and place.phone != payload.phone:
                 place.phone = payload.phone
                 updated = True
@@ -214,6 +224,11 @@ def update_visit_length(request, tomtom_id: str, payload: UpdateVisitLengthInput
     saved_place.average_visit_length = payload.visit_length
     saved_place.save()
     return saved_place
+
+@router.get("/nearby", response=List[PlaceSchema])
+def get_nearby_places(request, lat: float, lng: float, radius_km: float = 5.0):
+    user_location = Point(lng, lat, srid=4326)
+    return Place.objects.filter(location__dwithin=(user_location, D(km=radius_km)))
 
 @router.get("/{tomtom_id}", response=PlaceSchema)
 def get_place_details(request, tomtom_id: str):

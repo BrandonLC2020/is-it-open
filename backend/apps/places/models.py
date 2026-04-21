@@ -1,12 +1,11 @@
-from django.db import models
+from django.contrib.gis.db import models
 from django.conf import settings
 
 class Place(models.Model):
     tomtom_id = models.CharField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
     address = models.CharField(max_length=512)
-    latitude = models.FloatField()
-    longitude = models.FloatField()
+    location = models.PointField(geography=True, spatial_index=True)
     phone = models.CharField(max_length=50, null=True, blank=True)
     website = models.URLField(max_length=500, null=True, blank=True)
     categories = models.JSONField(default=list, blank=True)

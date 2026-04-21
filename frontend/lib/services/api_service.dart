@@ -85,6 +85,23 @@ class ApiService {
     }
   }
 
+  Future<List<Place>> getNearbyPlaces(
+    double lat,
+    double lng, {
+    double radiusKm = 5.0,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/places/nearby',
+        queryParameters: {'lat': lat, 'lng': lng, 'radius_km': radiusKm},
+      );
+      final List<dynamic> data = response.data;
+      return data.map((json) => Place.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw Exception('Failed to get nearby places: ${e.message}');
+    }
+  }
+
   Future<Place> savePlace(Place place) async {
     try {
       final response = await _dio.post('/places/', data: place.toJson());
