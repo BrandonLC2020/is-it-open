@@ -59,10 +59,14 @@ class CalendarEventTileWidget extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (event.description != null && event.description!.isNotEmpty)
+                  if (event.description != null &&
+                      event.description!.isNotEmpty)
                     Text(
                       event.description!,
-                      style: const TextStyle(color: Colors.white70, fontSize: 9),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 9,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -119,7 +123,10 @@ class FullDayEventWidget extends StatelessWidget {
                     ),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
                         child: Text(
                           event.title,
                           style: const TextStyle(
@@ -157,7 +164,21 @@ class StackEventArranger<T extends Object?> extends EventArranger<T> {
   }) {
     final arrangedEvents = <OrganizedCalendarEventData<T>>[];
 
-    for (final event in events) {
+    // Ensure 'Open' is rendered first (background), and 'Planned Visit' last (top).
+    final sortedEvents = List<CalendarEventData<T>>.from(events)
+      ..sort((a, b) {
+        // 'Open' always first
+        if (a.title == 'Open' && b.title != 'Open') return -1;
+        if (a.title != 'Open' && b.title == 'Open') return 1;
+
+        // 'Planned Visit' always last
+        if (a.title == 'Planned Visit' && b.title != 'Planned Visit') return 1;
+        if (a.title != 'Planned Visit' && b.title == 'Planned Visit') return -1;
+
+        return 0;
+      });
+
+    for (final event in sortedEvents) {
       final startTime = event.startTime ?? event.date;
       final endTime = event.endTime ?? event.date;
 
