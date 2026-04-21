@@ -7,6 +7,8 @@ import '../../models/place.dart';
 import '../../models/saved_place.dart';
 import '../../services/api_service.dart';
 import '../../bloc/preferences/preferences_cubit.dart';
+import '../../bloc/calendar/calendar_data_bloc.dart';
+import '../../bloc/calendar/calendar_data_state.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
 
@@ -216,9 +218,12 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     if (events.isEmpty) return const SizedBox.shrink();
     final event = events[0];
     final isPlannedVisit = event.title == 'Planned Visit';
+    final isOpen = event.title == 'Open';
+    final isPersonal = !isOpen && !isPlannedVisit;
 
     return GestureDetector(
       onTapUp: (details) {
+        if (isPersonal) return;
         if (!isPlannedVisit && _savedPlace?.averageVisitLength != null) {
           final tappedMinutes = details.localPosition.dy.toInt();
           final tappedTime = event.startTime!.add(
@@ -257,9 +262,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               );
             }
           : null,
-      onVerticalDragStart: isPlannedVisit
-          ? (_) => _dragAccumulator = 0.0
-          : null,
+      onVerticalDragStart: isPlannedVisit ? (_) => _dragAccumulator = 0.0 : null,
       onVerticalDragUpdate: isPlannedVisit
           ? (details) {
               if (_savedPlace?.averageVisitLength != null) {
@@ -285,7 +288,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           : null,
       child: Container(
         decoration: BoxDecoration(
-          color: event.color,
+          color: isPersonal ? Colors.blueGrey.withValues(alpha: 0.6) : event.color,
           borderRadius: BorderRadius.circular(4),
           boxShadow: isPlannedVisit
               ? [
@@ -308,12 +311,14 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
       ),
     );
   }
 
-  EventController<Object?> _buildEventController() {
+  EventController<Object?> _buildEventController(CalendarDataState dataState) {
     final controller = EventController<Object?>();
     final now = DateTime.now();
     final startOfWeek = DateTime(
@@ -377,6 +382,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         ),
       );
     }
+
+    // Add remote events (personal events)
+    controller.addAll(dataState.remoteEvents);
 
     return controller;
   }
@@ -989,6 +997,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     Color textColor,
     Color textSmallColor,
     bool use24HourFormat,
+    CalendarDataState dataState,
   ) {
     List<WeekDays> weekDays = WeekDays.values;
     String headerText = "";
@@ -1020,7 +1029,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     if (_currentView == CalendarViewType.singleDay) {
       calendarWidget = DayView(
         key: ValueKey(_baseDate),
-        controller: _buildEventController(),
+        controller: _buildEventController(dataState),
         initialDay: _baseDate,
         scrollOffset: initialScrollOffset,
         minDay: _baseDate.subtract(const Duration(days: 28)),
@@ -1074,7 +1083,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     } else {
       calendarWidget = WeekView(
         key: ValueKey(_baseDate),
-        controller: _buildEventController(),
+        controller: _buildEventController(dataState),
         minDay: _baseDate.subtract(const Duration(days: 28)),
         maxDay: _baseDate.add(const Duration(days: 84)),
         initialDay: _baseDate,
@@ -1328,129 +1337,141 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             ),
         ],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isMobile = constraints.maxWidth < 800;
+      body: BlocBuilder<CalendarDataBloc, CalendarDataState>(
+        builder: (context, dataState) {
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 800;
 
-          Widget detailsContent = SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildGraphicPicker(),
-                _buildAverageVisitLengthPicker(),
-                _buildAddressSection(),
-                const SizedBox(height: 16),
-                _buildContactInfoSection(),
-                // More details will be added here later
-              ],
-            ),
-          );
-
-          Widget calendarContent = Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
-                child: Row(
+              Widget detailsContent = SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (isMobile) ...[
-                      IconButton(
-                        icon: Icon(
-                          _isCalendarMinimized
-                              ? Icons.expand_less
-                              : Icons.minimize,
-                          size: 24,
-                        ),
-                        tooltip: _isCalendarMinimized
-                            ? 'Show calendar'
-                            : 'Minimize calendar',
-                        onPressed: () => setState(() {
-                          _isCalendarMinimized = !_isCalendarMinimized;
-                          if (_isCalendarMinimized) _isCalendarExpanded = false;
-                        }),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
-                    const Spacer(),
-                    _buildCalendarOptions(),
-                    const Spacer(),
-                    if (isMobile) ...[
-                      IconButton(
-                        icon: Icon(
-                          _isCalendarExpanded
-                              ? Icons.fullscreen_exit
-                              : Icons.fullscreen,
-                          size: 24,
-                        ),
-                        tooltip: _isCalendarExpanded
-                            ? 'Collapse calendar'
-                            : 'Expand calendar',
-                        onPressed: () => setState(() {
-                          _isCalendarExpanded = !_isCalendarExpanded;
-                          if (_isCalendarExpanded) _isCalendarMinimized = false;
-                        }),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
+                    _buildGraphicPicker(),
+                    _buildAverageVisitLengthPicker(),
+                    _buildAddressSection(),
+                    const SizedBox(height: 16),
+                    _buildContactInfoSection(),
+                    // More details will be added here later
                   ],
                 ),
-              ),
-              if (!_isCalendarMinimized)
-                Expanded(
-                  child: _buildCalendar(
-                    textColor,
-                    textSmallColor,
-                    use24HourFormat,
-                  ),
-                ),
-            ],
-          );
+              );
 
-          if (isMobile) {
-            return Column(
-              children: [
-                if (!_isCalendarExpanded) ...[
-                  // Details section — expands when calendar is minimized
-                  Expanded(
-                    flex: _isCalendarMinimized ? 1 : 0,
-                    child: Container(
-                      constraints: _isCalendarMinimized
-                          ? null
-                          : BoxConstraints(
-                              maxHeight:
-                                  MediaQuery.of(context).size.height * 0.3,
+              Widget calendarContent = Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
+                    child: Row(
+                      children: [
+                        if (isMobile) ...[
+                          IconButton(
+                            icon: Icon(
+                              _isCalendarMinimized
+                                  ? Icons.expand_less
+                                  : Icons.minimize,
+                              size: 24,
                             ),
-                      child: detailsContent,
+                            tooltip: _isCalendarMinimized
+                                ? 'Show calendar'
+                                : 'Minimize calendar',
+                            onPressed:
+                                () => setState(() {
+                                  _isCalendarMinimized = !_isCalendarMinimized;
+                                  if (_isCalendarMinimized) {
+                                    _isCalendarExpanded = false;
+                                  }
+                                }),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
+                        const Spacer(),
+                        _buildCalendarOptions(),
+                        const Spacer(),
+                        if (isMobile) ...[
+                          IconButton(
+                            icon: Icon(
+                              _isCalendarExpanded
+                                  ? Icons.fullscreen_exit
+                                  : Icons.fullscreen,
+                              size: 24,
+                            ),
+                            tooltip: _isCalendarExpanded
+                                ? 'Collapse calendar'
+                                : 'Expand calendar',
+                            onPressed:
+                                () => setState(() {
+                                  _isCalendarExpanded = !_isCalendarExpanded;
+                                  if (_isCalendarExpanded) {
+                                    _isCalendarMinimized = false;
+                                  }
+                                }),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  const Divider(height: 1),
+                  if (!_isCalendarMinimized)
+                    Expanded(
+                      child: _buildCalendar(
+                        textColor,
+                        textSmallColor,
+                        use24HourFormat,
+                        dataState,
+                      ),
+                    ),
                 ],
-                // Calendar: minimized just shows the picker row, otherwise expands
-                if (_isCalendarMinimized)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24.0),
-                    child: calendarContent,
-                  )
-                else
-                  Expanded(child: calendarContent),
-              ],
-            );
-          } else {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: detailsContent),
-                const VerticalDivider(width: 1),
-                Expanded(child: calendarContent),
-              ],
-            );
-          }
+              );
+
+              if (isMobile) {
+                return Column(
+                  children: [
+                    if (!_isCalendarExpanded) ...[
+                      // Details section — expands when calendar is minimized
+                      Expanded(
+                        flex: _isCalendarMinimized ? 1 : 0,
+                        child: Container(
+                          constraints:
+                              _isCalendarMinimized
+                                  ? null
+                                  : BoxConstraints(
+                                    maxHeight:
+                                        MediaQuery.of(context).size.height *
+                                        0.3,
+                                  ),
+                          child: detailsContent,
+                        ),
+                      ),
+                      const Divider(height: 1),
+                    ],
+                    // Calendar: minimized just shows the picker row, otherwise expands
+                    if (_isCalendarMinimized)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24.0),
+                        child: calendarContent,
+                      )
+                    else
+                      Expanded(child: calendarContent),
+                  ],
+                );
+              } else {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: detailsContent),
+                    const VerticalDivider(width: 1),
+                    Expanded(child: calendarContent),
+                  ],
+                );
+              }
+            },
+          );
         },
       ),
     );
   }
 }
-
 class StackEventArranger<T extends Object?> extends EventArranger<T> {
   const StackEventArranger();
 
