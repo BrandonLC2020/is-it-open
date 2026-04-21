@@ -9,11 +9,13 @@ class CalendarUiCubit extends Cubit<CalendarUiState> {
           baseDate: initialDate ?? DateTime.now(),
           isCalendarExpanded: false,
           isCalendarMinimized: false,
+          showBusinessHours: true,
+          showPersonalEvents: true,
         ),
       );
 
   void changeViewType(CalendarViewType type) {
-    emit(state.copyWith(currentView: type, baseDate: DateTime.now()));
+    emit(state.copyWith(currentView: type));
   }
 
   void navigateDate(DateTime newDate) {
@@ -36,5 +38,13 @@ class CalendarUiCubit extends Cubit<CalendarUiState> {
         isCalendarExpanded: false,
       ),
     );
+  }
+
+  void toggleBusinessHours() {
+    emit(state.copyWith(showBusinessHours: !state.showBusinessHours));
+  }
+
+  void togglePersonalEvents() {
+    emit(state.copyWith(showPersonalEvents: !state.showPersonalEvents));
   }
 }
