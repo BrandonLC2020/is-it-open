@@ -7,6 +7,7 @@ import '../../bloc/calendar/calendar_ui_state.dart';
 import '../../bloc/calendar/calendar_ui_cubit.dart';
 import 'calendar_event_tile.dart';
 import 'calendar_header.dart';
+import 'event_details_popup.dart';
 
 String _weekDayShortName(int weekday) {
   const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -130,6 +131,14 @@ class CalendarViewStackWidget extends StatelessWidget {
                   startDuration: startDuration,
                   endDuration: endDuration,
                 ),
+        onEventTap: (events, date) {
+          if (events.isNotEmpty) {
+            showDialog(
+              context: context,
+              builder: (context) => EventDetailsPopup(event: events.first),
+            );
+          }
+        },
         fullDayEventBuilder: (events, date) =>
             FullDayEventWidget(events: events, date: date),
         showLiveTimeLineInAllDays: true,
@@ -180,6 +189,14 @@ class CalendarViewStackWidget extends StatelessWidget {
                   startDuration: startDuration,
                   endDuration: endDuration,
                 ),
+        onEventTap: (events, date) {
+          if (events.isNotEmpty) {
+            showDialog(
+              context: context,
+              builder: (context) => EventDetailsPopup(event: events.first),
+            );
+          }
+        },
         fullDayEventBuilder: (events, date) =>
             FullDayEventWidget(events: events, date: date),
         showLiveTimeLineInAllDays: true,
