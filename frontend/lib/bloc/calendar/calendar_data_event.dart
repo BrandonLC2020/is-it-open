@@ -43,6 +43,8 @@ class ImportIcalFile extends CalendarDataEvent {
 
 class ClearImportedEvents extends CalendarDataEvent {}
 
+class ClearCalendarData extends CalendarDataEvent {}
+
 class LoadRemoteEvents extends CalendarDataEvent {
   final String url;
   const LoadRemoteEvents(this.url);

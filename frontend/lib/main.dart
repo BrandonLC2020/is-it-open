@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:calendar_view/calendar_view.dart';
-import 'package:frontend/screens/home/home_screen.dart';
-import 'package:frontend/screens/auth/login_screen.dart';
+import 'screens/home/home_screen.dart';
+import 'screens/auth/login_screen.dart';
 import 'bloc/auth/auth_bloc.dart';
 import 'bloc/theme/theme_cubit.dart';
 import 'bloc/preferences/preferences_cubit.dart';
+import 'bloc/calendar/calendar_data_bloc.dart';
+import 'bloc/calendar/calendar_data_event.dart';
 import 'core/env_config.dart';
 import 'services/api_service.dart';
 import 'utils/app_theme.dart';
@@ -30,13 +31,37 @@ class MyApp extends StatelessWidget {
                 AuthBloc(apiClient: context.read<ApiService>())
                   ..add(AppStarted()),
           ),
+          BlocProvider<CalendarDataBloc>(
+            create: (context) =>
+                CalendarDataBloc(apiService: context.read<ApiService>())
+                  ..add(LoadSavedPlaces())
+                  ..add(const InitDeviceCalendar()),
+          ),
           BlocProvider<ThemeCubit>(create: (context) => ThemeCubit()),
           BlocProvider<PreferencesCubit>(
             create: (context) => PreferencesCubit(),
           ),
         ],
-        child: CalendarControllerProvider(
-          controller: EventController(),
+        child: BlocListener<AuthBloc, AuthState>(
+          listenWhen: (previous, current) {
+            bool login =
+                current is AuthAuthenticated && previous is! AuthAuthenticated;
+            bool logout =
+                (current is AuthUnauthenticated || current is AuthFailure) &&
+                (previous is AuthAuthenticated);
+            return login || logout;
+          },
+          listener: (context, state) {
+            if (state is AuthAuthenticated) {
+              context.read<CalendarDataBloc>().add(LoadSavedPlaces());
+              final url = state.user.calendarSubscriptionUrl;
+              if (url != null && url.isNotEmpty) {
+                context.read<CalendarDataBloc>().add(LoadRemoteEvents(url));
+              }
+            } else if (state is AuthUnauthenticated || state is AuthFailure) {
+              context.read<CalendarDataBloc>().add(ClearCalendarData());
+            }
+          },
           child: BlocBuilder<ThemeCubit, ThemeMode>(
             builder: (context, themeMode) {
               return MaterialApp(

@@ -25,8 +25,17 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
     on<ClearImportedEvents>(_onClearImportedEvents);
     on<LoadRemoteEvents>(_onLoadRemoteEvents);
     on<LoadPersistedImportedEvents>(_onLoadPersistedImportedEvents);
+    on<ClearCalendarData>(_onClearCalendarData);
 
     add(LoadPersistedImportedEvents());
+  }
+
+  void _onClearCalendarData(
+    ClearCalendarData event,
+    Emitter<CalendarDataState> emit,
+  ) {
+    emit(const CalendarDataState());
+    _persistImportedEvents([]);
   }
 
   Future<void> _onLoadSavedPlaces(
