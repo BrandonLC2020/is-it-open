@@ -63,13 +63,21 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
 
   final List<Color> _availableColors = [
     Colors.blue,
-    Colors.red,
-    Colors.green,
-    Colors.orange,
+    Colors.indigo,
+    Colors.deepPurple,
     Colors.purple,
-    Colors.teal,
     Colors.pink,
-    Colors.brown,
+    Colors.red,
+    Colors.deepOrange,
+    Colors.orange,
+    Colors.amber,
+    Colors.yellow,
+    Colors.lime,
+    Colors.lightGreen,
+    Colors.green,
+    Colors.teal,
+    Colors.cyan,
+    Colors.blueGrey,
   ];
 
   @override
@@ -886,44 +894,62 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             const SizedBox(height: 16),
             const Text('Color', style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _availableColors.map((color) {
-                  final isSelected =
-                      color.toARGB32() == currentColor.toARGB32();
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedColor = color.toARGB32().toRadixString(16);
-                      });
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: isSelected
-                            ? Border.all(
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: _availableColors.map((color) {
+                final isSelected = color.toARGB32() == currentColor.toARGB32();
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedColor = color.toARGB32().toRadixString(16);
+                    });
+                  },
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border:
+                          isSelected
+                              ? Border.all(
                                 color: Theme.of(context).colorScheme.onSurface,
-                                width: 2,
+                                width: 2.5,
                               )
-                            : null,
-                        boxShadow: isSelected
-                            ? [
-                                const BoxShadow(
-                                  color: Colors.black26,
-                                  blurRadius: 4,
+                              : Border.all(
+                                color: color.computeLuminance() > 0.5
+                                    ? Colors.black12
+                                    : Colors.white12,
+                                width: 1,
+                              ),
+                      boxShadow:
+                          isSelected
+                              ? [
+                                BoxShadow(
+                                  color: color.withValues(alpha: 0.4),
+                                  blurRadius: 6,
+                                  spreadRadius: 1,
                                 ),
                               ]
-                            : null,
-                      ),
+                              : null,
                     ),
-                  );
-                }).toList(),
-              ),
+                    child:
+                        isSelected
+                            ? Center(
+                              child: Icon(
+                                Icons.check,
+                                size: 20,
+                                color:
+                                    color.computeLuminance() > 0.5
+                                        ? Colors.black87
+                                        : Colors.white,
+                              ),
+                            )
+                            : null,
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 16),
             const Text('Icon', style: TextStyle(fontWeight: FontWeight.w500)),
