@@ -230,6 +230,15 @@ def get_nearby_places(request, lat: float, lng: float, radius_km: float = 5.0):
     user_location = Point(lng, lat, srid=4326)
     return Place.objects.filter(location__dwithin=(user_location, D(km=radius_km)))
 
+@router.get("/suggestions", response=List[PlaceCreateSchema])
+def get_suggestions(request, lat: Optional[float] = None, lng: Optional[float] = None):
+    if lat is not None and lng is not None:
+        client = TomTomClient()
+        return client.nearby_search(lat, lng)
+    
+    # Fallback: Get some recently added places
+    return Place.objects.order_by('-id')[:10]
+
 @router.get("/{tomtom_id}", response=PlaceSchema)
 def get_place_details(request, tomtom_id: str):
     # Check if place exists in DB

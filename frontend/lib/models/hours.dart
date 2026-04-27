@@ -1,15 +1,19 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
-class BusinessHours {
+class BusinessHours extends Equatable {
   final int dayOfWeek;
   final TimeOfDay openTime;
   final TimeOfDay closeTime;
 
-  BusinessHours({
+  const BusinessHours({
     required this.dayOfWeek,
     required this.openTime,
     required this.closeTime,
   });
+
+  @override
+  List<Object?> get props => [dayOfWeek, openTime, closeTime];
 
   factory BusinessHours.fromJson(Map<String, dynamic> json) {
     return BusinessHours(

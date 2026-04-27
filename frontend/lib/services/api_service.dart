@@ -85,6 +85,23 @@ class ApiService {
     }
   }
 
+  Future<List<Place>> getSuggestions(double? lat, double? lng) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (lat != null) queryParams['lat'] = lat;
+      if (lng != null) queryParams['lng'] = lng;
+
+      final response = await _dio.get(
+        '/places/suggestions',
+        queryParameters: queryParams,
+      );
+      final List<dynamic> data = response.data;
+      return data.map((json) => Place.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw Exception('Failed to get suggestions: ${e.message}');
+    }
+  }
+
   Future<List<Place>> getNearbyPlaces(
     double lat,
     double lng, {

@@ -32,6 +32,30 @@ class TomTomClient:
         except requests.RequestException:
             return []
 
+    def nearby_search(self, lat, lng, radius=5000, limit=10):
+        """
+        Search for nearby points of interest using TomTom Nearby Search API.
+        """
+        if not self.api_key:
+            return []
+
+        url = f"{self.BASE_URL}/nearbySearch/.json"
+        params = {
+            "key": self.api_key,
+            "lat": lat,
+            "lon": lng,
+            "radius": radius,
+            "limit": limit,
+            "openingHours": "nextSevenDays",
+        }
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            return self._parse_results(data.get('results', []))
+        except requests.RequestException:
+            return []
+
     def _parse_results(self, results):
         parsed = []
         for result in results:

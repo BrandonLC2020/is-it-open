@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../services/api_service.dart';
 import '../../../bloc/search/search_bloc.dart';
 import '../../../bloc/search/search_event.dart';
@@ -21,9 +22,36 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _isGridView = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Use a post-frame callback to trigger suggestions after the Bloc is initialized via BlocProvider
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSuggestions(BuildContext context) async {
+    double? lat;
+    double? lng;
+
+    try {
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
+        final position = await Geolocator.getCurrentPosition();
+        lat = position.latitude;
+        lng = position.longitude;
+      }
+    } catch (e) {
+      // Ignore location errors for suggestions
+    }
+
+    if (context.mounted) {
+      context.read<SearchBloc>().add(LoadSearchSuggestions(lat: lat, lng: lng));
+    }
   }
 
   void _performSearch(BuildContext context) {
@@ -36,12 +64,99 @@ class _SearchScreenState extends State<SearchScreen> {
   void _clearSearch(BuildContext context) {
     _searchController.clear();
     context.read<SearchBloc>().add(const SearchQueryChanged(''));
+    _loadSuggestions(context);
+  }
+
+  Widget _buildSuggestionsSection(SearchState state) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (state.recentPlaces.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                'Recent Searches',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            SizedBox(
+              height: 120,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                itemCount: state.recentPlaces.length,
+                itemBuilder: (context, index) {
+                  final place = state.recentPlaces[index];
+                  return SizedBox(
+                    width: 200,
+                    child: SearchResultGridCard(place: place),
+                  );
+                },
+              ),
+            ),
+          ],
+          if (state.suggestions.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
+              child: Text(
+                'Trending Nearby',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 300,
+                  mainAxisExtent: 140,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: state.suggestions.length,
+                itemBuilder: (context, index) {
+                  final place = state.suggestions[index];
+                  return SearchResultGridCard(place: place);
+                },
+              ),
+            ),
+          ] else if (state.suggestions.isEmpty && state.recentPlaces.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.search_off,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No suggestions available.\nTry searching for something!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => SearchBloc(apiClient: context.read<ApiService>()),
+      create: (context) {
+        final bloc = SearchBloc(apiClient: context.read<ApiService>());
+        _loadSuggestions(context);
+        return bloc;
+      },
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
@@ -71,6 +186,14 @@ class _SearchScreenState extends State<SearchScreen> {
                             ),
                             textInputAction: TextInputAction.search,
                             onSubmitted: (_) => _performSearch(context),
+                            onChanged: (value) {
+                              if (value.isEmpty) {
+                                context.read<SearchBloc>().add(
+                                  const SearchQueryChanged(''),
+                                );
+                                _loadSuggestions(context);
+                              }
+                            },
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -102,6 +225,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       return const Center(child: CircularProgressIndicator());
                     } else if (state.status == SearchStatus.failure) {
                       return Center(child: Text('Error: ${state.error}'));
+                    } else if (state.status == SearchStatus.initial) {
+                      return _buildSuggestionsSection(state);
                     } else if (state.status == SearchStatus.success) {
                       if (state.places.isEmpty) {
                         return Center(
@@ -196,14 +321,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               },
                             );
                     }
-                    return Center(
-                      child: Text(
-                        'Enter a query and press Search',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    );
+                    return const SizedBox.shrink();
                   },
                 ),
               ),

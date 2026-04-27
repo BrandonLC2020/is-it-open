@@ -1,7 +1,8 @@
+import 'package:equatable/equatable.dart';
 import 'package:latlong2/latlong.dart';
 import 'hours.dart';
 
-class Place {
+class Place extends Equatable {
   final int? id;
   final String tomtomId;
   final String name;
@@ -12,7 +13,7 @@ class Place {
   final List<String> categories;
   final List<BusinessHours> hours;
 
-  Place({
+  const Place({
     this.id,
     required this.tomtomId,
     required this.name,
@@ -23,6 +24,20 @@ class Place {
     this.categories = const [],
     this.hours = const [],
   });
+
+  @override
+  List<Object?> get props => [
+    id,
+    tomtomId,
+    name,
+    address,
+    location.latitude,
+    location.longitude,
+    phone,
+    website,
+    categories,
+    hours,
+  ];
 
   factory Place.fromJson(Map<String, dynamic> json) {
     return Place(
