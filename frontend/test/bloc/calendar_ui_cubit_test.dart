@@ -20,5 +20,9 @@ void main() {
     expect(cubit.state.showBusinessHours, false);
     cubit.togglePersonalEvents();
     expect(cubit.state.showPersonalEvents, false);
+    cubit.toggleSidebar();
+    expect(cubit.state.isSidebarCollapsed, true);
+    cubit.toggleSidebar();
+    expect(cubit.state.isSidebarCollapsed, false);
   });
 }

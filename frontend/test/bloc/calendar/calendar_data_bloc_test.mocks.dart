@@ -94,6 +94,30 @@ class MockApiService extends _i1.Mock implements _i4.ApiService {
           as _i5.Future<List<_i3.Place>>);
 
   @override
+  _i5.Future<List<_i3.Place>> getSuggestions(double? lat, double? lng) =>
+      (super.noSuchMethod(
+            Invocation.method(#getSuggestions, [lat, lng]),
+            returnValue: _i5.Future<List<_i3.Place>>.value(<_i3.Place>[]),
+          )
+          as _i5.Future<List<_i3.Place>>);
+
+  @override
+  _i5.Future<List<_i3.Place>> getNearbyPlaces(
+    double? lat,
+    double? lng, {
+    double? radiusKm = 5.0,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #getNearbyPlaces,
+              [lat, lng],
+              {#radiusKm: radiusKm},
+            ),
+            returnValue: _i5.Future<List<_i3.Place>>.value(<_i3.Place>[]),
+          )
+          as _i5.Future<List<_i3.Place>>);
+
+  @override
   _i5.Future<_i3.Place> savePlace(_i3.Place? place) =>
       (super.noSuchMethod(
             Invocation.method(#savePlace, [place]),

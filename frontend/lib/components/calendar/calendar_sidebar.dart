@@ -80,13 +80,126 @@ class CalendarSidebarWidget extends StatelessWidget {
   final CalendarDataState dataState;
   final Color Function(SavedPlace, int) colorForPlace;
   final Map<String, IconData> availableIcons;
+  final bool isCollapsed;
 
   const CalendarSidebarWidget({
     super.key,
     required this.dataState,
     required this.colorForPlace,
     required this.availableIcons,
+    this.isCollapsed = false,
   });
+
+  Widget _buildCollapsedSidebar(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          // Places
+          ...List.generate(dataState.savedPlaces.length, (index) {
+            final sp = dataState.savedPlaces[index];
+            final isChecked = dataState.checkedPlaceIds.contains(
+              sp.place.tomtomId,
+            );
+            final color = colorForPlace(sp, index);
+            final iconName = sp.icon ?? 'star';
+            final iconData = availableIcons[iconName] ?? Icons.star;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Tooltip(
+                message: displayName(sp),
+                child: InkWell(
+                  onTap: () {
+                    context.read<CalendarDataBloc>().add(
+                      TogglePlaceFilter(sp.place.tomtomId),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: isChecked ? 0.6 : 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(iconData, color: Colors.white, size: 20),
+                  ),
+                ),
+              ),
+            );
+          }),
+          const Divider(),
+          // Device Calendars
+          ...List.generate(dataState.deviceCalendars.length, (index) {
+            final cal = dataState.deviceCalendars[index];
+            final isChecked = dataState.checkedCalendarIds.contains(cal.id);
+            final color = cal.color != null ? Color(cal.color!) : Colors.blue;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Tooltip(
+                message: cal.name ?? 'Unnamed Calendar',
+                child: InkWell(
+                  onTap: () {
+                    if (cal.id != null) {
+                      context.read<CalendarDataBloc>().add(
+                        ToggleDeviceCalendar(cal.id!),
+                      );
+                    }
+                  },
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: isChecked ? 0.6 : 0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isChecked ? Colors.white : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+          const Divider(),
+          // Import action
+          Tooltip(
+            message: 'Import .ics file',
+            child: IconButton(
+              icon: const Icon(Icons.file_upload),
+              onPressed: () async {
+                final result = await FilePicker.platform.pickFiles(
+                  type: FileType.custom,
+                  allowedExtensions: ['ics'],
+                  withData: true,
+                );
+                if (result != null && result.files.single.bytes != null) {
+                  final icsString = utf8.decode(result.files.single.bytes!);
+                  if (context.mounted) {
+                    context.read<CalendarDataBloc>().add(
+                      ImportIcalFile(icsString),
+                    );
+                  }
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
 
   Widget _buildPlacesSidebar(BuildContext context) {
     if (dataState.status == CalendarDataStatus.loading) {
@@ -361,6 +474,9 @@ class CalendarSidebarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (isCollapsed) {
+      return _buildCollapsedSidebar(context);
+    }
     return ListView(
       children: [
         Padding(

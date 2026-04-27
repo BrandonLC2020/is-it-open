@@ -143,10 +143,9 @@ class CalendarViewStackWidget extends StatelessWidget {
         showLiveTimeLineInAllDays: true,
         dayTitleBuilder: (date) {
           final dayEvents = controller.getEventsOnDay(date);
-          final allDayEvents =
-              dayEvents
-                  .where((e) => e.startTime == null || e.endTime == null)
-                  .toList();
+          final allDayEvents = dayEvents
+              .where((e) => e.startTime == null || e.endTime == null)
+              .toList();
           final hasAllDay = allDayEvents.isNotEmpty;
 
           if (!hasAllDay) return const SizedBox.shrink();
@@ -155,9 +154,8 @@ class CalendarViewStackWidget extends StatelessWidget {
             onTap: () {
               showModalBottomSheet(
                 context: context,
-                builder:
-                    (context) =>
-                        _AllDayEventsSheet(date: date, events: allDayEvents),
+                builder: (context) =>
+                    _AllDayEventsSheet(date: date, events: allDayEvents),
               );
             },
             child: Container(
@@ -247,10 +245,9 @@ class CalendarViewStackWidget extends StatelessWidget {
         weekDayBuilder: (date) {
           final isToday = DateUtils.isSameDay(date, DateTime.now());
           final dayEvents = controller.getEventsOnDay(date);
-          final allDayEvents =
-              dayEvents
-                  .where((e) => e.startTime == null || e.endTime == null)
-                  .toList();
+          final allDayEvents = dayEvents
+              .where((e) => e.startTime == null || e.endTime == null)
+              .toList();
           final hasAllDay = allDayEvents.isNotEmpty;
 
           return GestureDetector(
@@ -258,9 +255,8 @@ class CalendarViewStackWidget extends StatelessWidget {
               if (hasAllDay) {
                 showModalBottomSheet(
                   context: context,
-                  builder:
-                      (context) =>
-                          _AllDayEventsSheet(date: date, events: allDayEvents),
+                  builder: (context) =>
+                      _AllDayEventsSheet(date: date, events: allDayEvents),
                 );
               }
             },

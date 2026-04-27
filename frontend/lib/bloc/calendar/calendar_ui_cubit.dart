@@ -40,6 +40,10 @@ class CalendarUiCubit extends Cubit<CalendarUiState> {
     );
   }
 
+  void toggleSidebar() {
+    emit(state.copyWith(isSidebarCollapsed: !state.isSidebarCollapsed));
+  }
+
   void toggleBusinessHours() {
     emit(state.copyWith(showBusinessHours: !state.showBusinessHours));
   }

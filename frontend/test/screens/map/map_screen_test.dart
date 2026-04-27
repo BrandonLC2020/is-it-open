@@ -9,10 +9,13 @@ import 'package:mocktail/mocktail.dart';
 import 'package:bloc_test/bloc_test.dart';
 
 class MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
+
 class MockApiService extends Mock implements ApiService {}
 
 void main() {
-  testWidgets('MapScreen renders FlutterMap immediately without blocking', (WidgetTester tester) async {
+  testWidgets('MapScreen renders FlutterMap immediately without blocking', (
+    WidgetTester tester,
+  ) async {
     final mockAuthBloc = MockAuthBloc();
     final mockApiService = MockApiService();
     when(() => mockAuthBloc.state).thenReturn(AuthInitial());
@@ -21,9 +24,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: MultiBlocProvider(
-          providers: [
-            BlocProvider<AuthBloc>.value(value: mockAuthBloc),
-          ],
+          providers: [BlocProvider<AuthBloc>.value(value: mockAuthBloc)],
           child: RepositoryProvider<ApiService>.value(
             value: mockApiService,
             child: const MapScreen(),
@@ -37,7 +38,7 @@ void main() {
 
     // Should find FlutterMap immediately
     expect(find.byType(FlutterMap), findsOneWidget);
-    
+
     // It's okay if there's a loader in the sidebar, but the main screen should NOT be JUST a loader
     // In the new implementation, the map is always part of the body.
   });

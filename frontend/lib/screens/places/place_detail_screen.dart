@@ -216,9 +216,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     if (!_isOpenDuring(start, end)) return false;
 
     for (final event in dataState.remoteEvents) {
-      final eventStart = event.startTime ??
+      final eventStart =
+          event.startTime ??
           DateTime(event.date.year, event.date.month, event.date.day);
-      final eventEnd = event.endTime ??
+      final eventEnd =
+          event.endTime ??
           DateTime(
             event.endDate.year,
             event.endDate.month,
@@ -245,9 +247,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       message = 'Planned visit must be entirely within open business hours';
     } else {
       for (final event in dataState.remoteEvents) {
-        final eventStart = event.startTime ??
+        final eventStart =
+            event.startTime ??
             DateTime(event.date.year, event.date.month, event.date.day);
-        final eventEnd = event.endTime ??
+        final eventEnd =
+            event.endTime ??
             DateTime(
               event.endDate.year,
               event.endDate.month,

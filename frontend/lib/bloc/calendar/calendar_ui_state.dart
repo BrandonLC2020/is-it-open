@@ -7,6 +7,7 @@ class CalendarUiState extends Equatable {
   final DateTime baseDate;
   final bool isCalendarExpanded;
   final bool isCalendarMinimized;
+  final bool isSidebarCollapsed;
   final bool showBusinessHours;
   final bool showPersonalEvents;
 
@@ -15,6 +16,7 @@ class CalendarUiState extends Equatable {
     required this.baseDate,
     required this.isCalendarExpanded,
     required this.isCalendarMinimized,
+    this.isSidebarCollapsed = false,
     this.showBusinessHours = true,
     this.showPersonalEvents = true,
   });
@@ -24,6 +26,7 @@ class CalendarUiState extends Equatable {
     DateTime? baseDate,
     bool? isCalendarExpanded,
     bool? isCalendarMinimized,
+    bool? isSidebarCollapsed,
     bool? showBusinessHours,
     bool? showPersonalEvents,
   }) {
@@ -32,6 +35,7 @@ class CalendarUiState extends Equatable {
       baseDate: baseDate ?? this.baseDate,
       isCalendarExpanded: isCalendarExpanded ?? this.isCalendarExpanded,
       isCalendarMinimized: isCalendarMinimized ?? this.isCalendarMinimized,
+      isSidebarCollapsed: isSidebarCollapsed ?? this.isSidebarCollapsed,
       showBusinessHours: showBusinessHours ?? this.showBusinessHours,
       showPersonalEvents: showPersonalEvents ?? this.showPersonalEvents,
     );
@@ -43,6 +47,7 @@ class CalendarUiState extends Equatable {
     baseDate,
     isCalendarExpanded,
     isCalendarMinimized,
+    isSidebarCollapsed,
     showBusinessHours,
     showPersonalEvents,
   ];

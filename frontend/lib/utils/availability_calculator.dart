@@ -8,8 +8,9 @@ class AvailabilityCalculator {
     List<CalendarEventData<Object?>> results = [];
 
     // Sort personal events by start time
-    final sortedPersonal = List<CalendarEventData<Object?>>.from(personalEvents)
-      ..sort((a, b) => (a.startTime ?? a.date).compareTo(b.startTime ?? b.date));
+    final sortedPersonal = List<CalendarEventData<Object?>>.from(
+      personalEvents,
+    )..sort((a, b) => (a.startTime ?? a.date).compareTo(b.startTime ?? b.date));
 
     for (final businessBlock in businessBlocks) {
       DateTime currentStart = businessBlock.startTime ?? businessBlock.date;
@@ -22,10 +23,10 @@ class AvailabilityCalculator {
             personalEvent.date.day != businessBlock.date.day) {
           continue;
         }
-        
+
         // Skip all-day events in this specific time-based subtraction
         if (personalEvent.startTime == null || personalEvent.endTime == null) {
-            continue;
+          continue;
         }
 
         final pStart = personalEvent.startTime!;
@@ -47,7 +48,7 @@ class AvailabilityCalculator {
           }
           // Move the current start to the end of the personal event (or keep it if personal event ends earlier)
           if (pEnd.isAfter(currentStart)) {
-             currentStart = pEnd;
+            currentStart = pEnd;
           }
         }
       }

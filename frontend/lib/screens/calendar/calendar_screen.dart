@@ -107,9 +107,10 @@ class _CalendarScreenContent extends StatelessWidget {
           continue;
         }
 
-        final color = _colorForPlace(sp, colorIndex).withValues(
-          alpha: 1.0,
-        ); // Solid for contrast
+        final color = _colorForPlace(
+          sp,
+          colorIndex,
+        ).withValues(alpha: 1.0); // Solid for contrast
         final label = displayName(sp);
 
         for (int weekOffset = -4; weekOffset <= 12; weekOffset++) {
@@ -156,10 +157,9 @@ class _CalendarScreenContent extends StatelessWidget {
       ...dataState.remoteEvents,
     ];
 
-    final timedPersonalEvents =
-        allPersonalEvents
-            .where((e) => e.startTime != null && e.endTime != null)
-            .toList();
+    final timedPersonalEvents = allPersonalEvents
+        .where((e) => e.startTime != null && e.endTime != null)
+        .toList();
 
     if (uiState.showBusinessHours && uiState.showPersonalEvents) {
       final availableWindows = AvailabilityCalculator.calculateAvailableWindows(
@@ -183,8 +183,10 @@ class _CalendarScreenContent extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black;
     final textSmallColor = isDark ? Colors.white70 : Colors.black87;
-    final use24HourFormat =
-        context.watch<PreferencesCubit>().state.use24HourFormat;
+    final use24HourFormat = context
+        .watch<PreferencesCubit>()
+        .state
+        .use24HourFormat;
     final isMobile = MediaQuery.of(context).size.width < 800;
 
     return BlocBuilder<CalendarUiCubit, CalendarUiState>(
@@ -197,6 +199,7 @@ class _CalendarScreenContent extends StatelessWidget {
               dataState: dataState,
               colorForPlace: _colorForPlace,
               availableIcons: _availableIcons,
+              isCollapsed: uiState.isSidebarCollapsed,
             );
 
             Widget calendarContent = CalendarViewStackWidget(
@@ -219,8 +222,9 @@ class _CalendarScreenContent extends StatelessWidget {
                       uiState.showBusinessHours
                           ? Icons.business_center
                           : Icons.business_center_outlined,
-                      color:
-                          uiState.showBusinessHours ? Colors.green : Colors.grey,
+                      color: uiState.showBusinessHours
+                          ? Colors.green
+                          : Colors.grey,
                     ),
                     tooltip: 'Toggle Business Hours',
                     onPressed: () {
@@ -232,14 +236,29 @@ class _CalendarScreenContent extends StatelessWidget {
                       uiState.showPersonalEvents
                           ? Icons.person
                           : Icons.person_outline,
-                      color:
-                          uiState.showPersonalEvents ? Colors.blue : Colors.grey,
+                      color: uiState.showPersonalEvents
+                          ? Colors.blue
+                          : Colors.grey,
                     ),
                     tooltip: 'Toggle Personal Events',
                     onPressed: () {
                       context.read<CalendarUiCubit>().togglePersonalEvents();
                     },
                   ),
+                  if (!isMobile)
+                    IconButton(
+                      icon: Icon(
+                        uiState.isSidebarCollapsed
+                            ? Icons.chevron_left
+                            : Icons.chevron_right,
+                      ),
+                      tooltip: uiState.isSidebarCollapsed
+                          ? 'Expand Sidebar'
+                          : 'Collapse Sidebar',
+                      onPressed: () {
+                        context.read<CalendarUiCubit>().toggleSidebar();
+                      },
+                    ),
                   Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: CalendarHeaderWidget(
@@ -260,9 +279,14 @@ class _CalendarScreenContent extends StatelessWidget {
                   ? calendarContent
                   : Row(
                       children: [
-                        Expanded(flex: 2, child: calendarContent),
+                        Expanded(child: calendarContent),
                         const VerticalDivider(width: 1),
-                        Expanded(flex: 1, child: sidebarContent),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          width: uiState.isSidebarCollapsed ? 64 : 300,
+                          child: sidebarContent,
+                        ),
                       ],
                     ),
             );

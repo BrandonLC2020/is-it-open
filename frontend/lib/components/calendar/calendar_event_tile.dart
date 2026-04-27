@@ -31,13 +31,17 @@ class CalendarEventTileWidget extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
-        color: isBusinessBlock ? event.color.withValues(alpha: 0.8) : Colors.transparent,
+        color: isBusinessBlock
+            ? event.color.withValues(alpha: 0.8)
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(4),
         border: isBusinessBlock
             ? null
             : Border.all(color: event.color.withValues(alpha: 0.5), width: 1),
       ),
-      child: isBusinessBlock ? _buildBusinessBlock(event) : _buildPersonalCutout(event),
+      child: isBusinessBlock
+          ? _buildBusinessBlock(event)
+          : _buildPersonalCutout(event),
     );
   }
 

@@ -4,6 +4,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
+import '../../bloc/map/map_ui_cubit.dart';
+import '../../bloc/map/map_ui_state.dart';
 import '../../models/user.dart';
 import '../../models/saved_place.dart';
 import '../../services/api_service.dart';
@@ -246,6 +248,113 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  Widget _buildCollapsedSidebar() {
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        // Toggle Pinned
+        Tooltip(
+          message: _showPinnedLocations ? 'Hide Pinned' : 'Show Pinned',
+          child: IconButton(
+            icon: Icon(
+              _showPinnedLocations ? Icons.push_pin : Icons.push_pin_outlined,
+              color: _showPinnedLocations
+                  ? Theme.of(context).colorScheme.primary
+                  : null,
+            ),
+            onPressed: () {
+              setState(() {
+                _showPinnedLocations = !_showPinnedLocations;
+                if (_showPinnedLocations) {
+                  for (final sp in _savedPlaces) {
+                    if (sp.isPinned) _checkedPlaceIds.add(sp.place.tomtomId);
+                  }
+                } else {
+                  for (final sp in _savedPlaces) {
+                    if (sp.isPinned) _checkedPlaceIds.remove(sp.place.tomtomId);
+                  }
+                }
+              });
+            },
+          ),
+        ),
+        const Divider(),
+        // Refresh
+        Tooltip(
+          message: 'Refresh Places',
+          child: IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() => _isLoadingPlaces = true);
+              _loadSavedPlaces();
+            },
+          ),
+        ),
+        if (_checkedPlaceIds.isNotEmpty)
+          Tooltip(
+            message: 'Hide All Markers',
+            child: IconButton(
+              icon: const Icon(Icons.layers_clear),
+              onPressed: () {
+                setState(() {
+                  _checkedPlaceIds.clear();
+                  _showPinnedLocations = false;
+                });
+              },
+            ),
+          ),
+        const Divider(),
+        // Places
+        Expanded(
+          child: ListView.builder(
+            itemCount: _savedPlaces.length,
+            itemBuilder: (context, index) {
+              final sp = _savedPlaces[index];
+              final isChecked = _checkedPlaceIds.contains(sp.place.tomtomId);
+              final color = _colorForPlace(sp, index);
+              final iconName = sp.icon ?? 'star';
+              final iconData = _availableIcons[iconName] ?? Icons.star;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Tooltip(
+                  message: _displayName(sp),
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        if (isChecked) {
+                          _checkedPlaceIds.remove(sp.place.tomtomId);
+                          if (sp.isPinned) _showPinnedLocations = false;
+                        } else {
+                          _checkedPlaceIds.add(sp.place.tomtomId);
+                          final allPinnedChecked = _savedPlaces
+                              .where((p) => p.isPinned)
+                              .every(
+                                (p) =>
+                                    _checkedPlaceIds.contains(p.place.tomtomId),
+                              );
+                          if (allPinnedChecked) _showPinnedLocations = true;
+                        }
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: isChecked ? 0.6 : 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(iconData, color: Colors.white, size: 20),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMap() {
     final authState = context.watch<AuthBloc>().state;
     User? user;
@@ -375,99 +484,129 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Blocking loading removed
+    return BlocProvider<MapUiCubit>(
+      create: (context) => MapUiCubit(),
+      child: BlocBuilder<MapUiCubit, MapUiState>(
+        builder: (context, uiState) {
+          final isMobile = MediaQuery.of(context).size.width < 800;
 
-    final isMobile = MediaQuery.of(context).size.width < 800;
-
-    Widget sidebarContent = SafeArea(
-      child: ListView(
-        children: [
-          SwitchListTile(
-            title: const Text('Show Pinned Locations'),
-            subtitle: const Text(
-              'Automatically show markers for all pinned places',
-            ),
-            value: _showPinnedLocations,
-            onChanged: (val) {
-              setState(() {
-                _showPinnedLocations = val;
-                if (val) {
-                  for (final sp in _savedPlaces) {
-                    if (sp.isPinned) _checkedPlaceIds.add(sp.place.tomtomId);
-                  }
-                } else {
-                  for (final sp in _savedPlaces) {
-                    if (sp.isPinned) _checkedPlaceIds.remove(sp.place.tomtomId);
-                  }
-                }
-              });
-            },
-          ),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Row(
-              children: [
-                Text(
-                  'My Places',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
+          Widget sidebarContent = SafeArea(
+            child: uiState.isSidebarCollapsed
+                ? _buildCollapsedSidebar()
+                : ListView(
+                    children: [
+                      SwitchListTile(
+                        title: const Text('Show Pinned Locations'),
+                        subtitle: const Text(
+                          'Automatically show markers for all pinned places',
+                        ),
+                        value: _showPinnedLocations,
+                        onChanged: (val) {
+                          setState(() {
+                            _showPinnedLocations = val;
+                            if (val) {
+                              for (final sp in _savedPlaces) {
+                                if (sp.isPinned) {
+                                  _checkedPlaceIds.add(sp.place.tomtomId);
+                                }
+                              }
+                            } else {
+                              for (final sp in _savedPlaces) {
+                                if (sp.isPinned) {
+                                  _checkedPlaceIds.remove(sp.place.tomtomId);
+                                }
+                              }
+                            }
+                          });
+                        },
+                      ),
+                      const Divider(),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        child: Row(
+                          children: [
+                            Text(
+                              'My Places',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (_checkedPlaceIds.isNotEmpty)
+                              IconButton(
+                                icon: const Icon(Icons.layers_clear, size: 18),
+                                tooltip: 'Hide All',
+                                onPressed: () {
+                                  setState(() {
+                                    _checkedPlaceIds.clear();
+                                    _showPinnedLocations = false;
+                                  });
+                                },
+                              ),
+                            IconButton(
+                              icon: const Icon(Icons.refresh, size: 18),
+                              onPressed: () {
+                                setState(() => _isLoadingPlaces = true);
+                                _loadSavedPlaces();
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      _buildPlacesSidebar(),
+                    ],
                   ),
-                ),
-                const Spacer(),
-                if (_checkedPlaceIds.isNotEmpty)
+          );
+
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Map'),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              actions: [
+                if (!isMobile)
                   IconButton(
-                    icon: const Icon(Icons.layers_clear, size: 18),
-                    tooltip: 'Hide All',
+                    icon: Icon(
+                      uiState.isSidebarCollapsed
+                          ? Icons.chevron_left
+                          : Icons.chevron_right,
+                    ),
+                    tooltip: uiState.isSidebarCollapsed
+                        ? 'Expand Sidebar'
+                        : 'Collapse Sidebar',
                     onPressed: () {
-                      setState(() {
-                        _checkedPlaceIds.clear();
-                        _showPinnedLocations = false;
-                      });
+                      context.read<MapUiCubit>().toggleSidebar();
                     },
                   ),
-                IconButton(
-                  icon: const Icon(Icons.refresh, size: 18),
-                  onPressed: () {
-                    setState(() => _isLoadingPlaces = true);
-                    _loadSavedPlaces();
-                  },
-                ),
+                if (isMobile)
+                  Builder(
+                    builder: (context) => IconButton(
+                      icon: const Icon(Icons.filter_list),
+                      onPressed: () => Scaffold.of(context).openEndDrawer(),
+                    ),
+                  ),
               ],
             ),
-          ),
-          _buildPlacesSidebar(),
-        ],
+            endDrawer: isMobile ? Drawer(child: sidebarContent) : null,
+            body: isMobile
+                ? _buildMap()
+                : Row(
+                    children: [
+                      Expanded(child: _buildMap()),
+                      const VerticalDivider(width: 1),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        width: uiState.isSidebarCollapsed ? 64 : 300,
+                        child: sidebarContent,
+                      ),
+                    ],
+                  ),
+          );
+        },
       ),
-    );
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Map'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          if (isMobile)
-            Builder(
-              builder: (context) => IconButton(
-                icon: const Icon(Icons.filter_list),
-                onPressed: () => Scaffold.of(context).openEndDrawer(),
-              ),
-            ),
-        ],
-      ),
-      endDrawer: isMobile ? Drawer(child: sidebarContent) : null,
-      body: isMobile
-          ? _buildMap()
-          : Row(
-              children: [
-                Expanded(flex: 2, child: _buildMap()),
-                const VerticalDivider(width: 1),
-                Expanded(flex: 1, child: sidebarContent),
-              ],
-            ),
     );
   }
 }
