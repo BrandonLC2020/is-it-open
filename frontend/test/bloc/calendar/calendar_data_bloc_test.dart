@@ -4,23 +4,31 @@ import 'package:frontend/bloc/calendar/calendar_data_bloc.dart';
 import 'package:frontend/bloc/calendar/calendar_data_event.dart';
 import 'package:frontend/bloc/calendar/calendar_data_state.dart';
 import 'package:frontend/services/api_service.dart';
+import 'package:frontend/services/ical_parser_service.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tz;
 import 'calendar_data_bloc_test.mocks.dart';
 
 @GenerateMocks([ApiService])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  tz.initializeTimeZones();
 
   group('CalendarDataBloc', () {
     late MockApiService mockApiService;
+    late IcalParserService icalParserService;
     late CalendarDataBloc bloc;
 
     setUp(() {
       SharedPreferences.setMockInitialValues({});
       mockApiService = MockApiService();
-      bloc = CalendarDataBloc(apiService: mockApiService);
+      icalParserService = IcalParserService();
+      bloc = CalendarDataBloc(
+        apiService: mockApiService,
+        icalParserService: icalParserService,
+      );
     });
 
     tearDown(() {

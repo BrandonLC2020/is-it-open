@@ -10,6 +10,7 @@ import 'bloc/calendar/calendar_data_bloc.dart';
 import 'bloc/calendar/calendar_data_event.dart';
 import 'core/env_config.dart';
 import 'services/api_service.dart';
+import 'services/ical_parser_service.dart';
 import 'utils/app_theme.dart';
 
 Future<void> main() async {
@@ -24,8 +25,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider(
-      create: (context) => ApiService(),
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider(create: (context) => ApiService()),
+        RepositoryProvider(create: (context) => IcalParserService()),
+      ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider<AuthBloc>(
@@ -35,7 +39,10 @@ class MyApp extends StatelessWidget {
           ),
           BlocProvider<CalendarDataBloc>(
             create: (context) =>
-                CalendarDataBloc(apiService: context.read<ApiService>())
+                CalendarDataBloc(
+                    apiService: context.read<ApiService>(),
+                    icalParserService: context.read<IcalParserService>(),
+                  )
                   ..add(LoadSavedPlaces())
                   ..add(const InitDeviceCalendar()),
           ),
