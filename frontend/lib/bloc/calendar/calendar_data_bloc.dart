@@ -3,9 +3,9 @@ import 'package:flutter/material.dart' show Color, Colors;
 import 'calendar_data_event.dart';
 import 'calendar_data_state.dart';
 import '../../services/api_service.dart';
+import '../../services/ical_parser_service.dart';
 import 'package:calendar_view/calendar_view.dart';
 import 'package:device_calendar/device_calendar.dart';
-import 'package:icalendar_parser/icalendar_parser.dart';
 import 'dart:convert' show jsonEncode, jsonDecode;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
@@ -13,9 +13,10 @@ import 'dart:io' show Platform;
 
 class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
   final ApiService apiService;
+  final IcalParserService icalParserService;
   final DeviceCalendarPlugin _deviceCalendarPlugin = DeviceCalendarPlugin();
 
-  CalendarDataBloc({required this.apiService})
+  CalendarDataBloc({required this.apiService, required this.icalParserService})
     : super(const CalendarDataState()) {
     on<LoadSavedPlaces>(_onLoadSavedPlaces);
     on<TogglePlaceFilter>(_onTogglePlaceFilter);
@@ -187,70 +188,14 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
     emit(state.copyWith(deviceEvents: allEvents));
   }
 
-  bool _isAllDayIcsDateTime(IcsDateTime dt) {
-    return !dt.dt.contains('T');
-  }
-
-  List<CalendarEventData<Object?>> _parseIcsString(
-    String icsString,
-    Color eventColor,
-  ) {
-    final iCalendar = ICalendar.fromString(icsString);
-    final List<CalendarEventData<Object?>> events = [];
-    for (final entry in iCalendar.data) {
-      if (entry['type'] == 'VEVENT') {
-        final title = entry['summary'] ?? 'Event';
-        final dtstart = entry['dtstart'] as IcsDateTime?;
-        final dtend = entry['dtend'] as IcsDateTime?;
-        final description = entry['description'];
-
-        if (dtstart != null) {
-          final isAllDay = _isAllDayIcsDateTime(dtstart);
-          final start = dtstart.toDateTime();
-          final end =
-              dtend?.toDateTime() ?? start?.add(const Duration(hours: 1));
-
-          if (start != null) {
-            if (isAllDay) {
-              final endDate = end != null
-                  ? end.subtract(const Duration(days: 1))
-                  : start;
-              events.add(
-                CalendarEventData(
-                  title: title,
-                  date: start,
-                  endDate: endDate,
-                  description: description,
-                  color: eventColor,
-                ),
-              );
-            } else {
-              events.add(
-                CalendarEventData(
-                  title: title,
-                  date: start,
-                  startTime: start,
-                  endTime: end ?? start,
-                  description: description,
-                  color: eventColor,
-                ),
-              );
-            }
-          }
-        }
-      }
-    }
-    return events;
-  }
-
   void _onImportIcalFile(
     ImportIcalFile event,
     Emitter<CalendarDataState> emit,
   ) {
     try {
-      final events = _parseIcsString(
+      final events = icalParserService.parse(
         event.icsString,
-        Colors.teal.withValues(alpha: 0.5),
+        eventColor: Colors.teal.withValues(alpha: 0.5),
       );
       emit(state.clearError().copyWith(importedEvents: events));
       _persistImportedEvents(events);
@@ -275,9 +220,9 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
     emit(state.clearError().copyWith(isLoadingRemote: true));
     try {
       final icsString = await apiService.getCalendarFromUrl(event.url);
-      final events = _parseIcsString(
+      final events = icalParserService.parse(
         icsString,
-        Colors.deepPurple.withValues(alpha: 0.5),
+        eventColor: Colors.deepPurple.withValues(alpha: 0.5),
       );
       emit(state.copyWith(remoteEvents: events, isLoadingRemote: false));
     } catch (e) {

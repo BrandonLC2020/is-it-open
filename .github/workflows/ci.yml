@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Backend Environment
+        run: |
+          cd backend
+          cp sample.env .env
+
+      - name: Build and Run Backend Tests
+        run: |
+          docker compose up -d db
+          docker compose build backend
+          docker compose run backend python manage.py test
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          flutter pub get
+
+      - name: Run Frontend Tests
+        run: |
+          cd frontend
+          flutter test

@@ -59,36 +59,40 @@ class TomTomClient:
     def _parse_results(self, results):
         parsed = []
         for result in results:
-            poi = result.get('poi', {})
-            address = result.get('address', {})
-            position = result.get('position', {})
-            
-            hours = self._parse_opening_hours(poi.get('openingHours', {}))
-            
-            categories = []
-            for cset in poi.get('categorySet', []):
-                name = cset.get('name')
-                if name:
-                    categories.append(name)
-
-            place_data = {
-                "tomtom_id": result.get('id'),
-                "name": poi.get('name'),
-                # Construct a readable address
-                "address": address.get('freeformAddress', 
-                    f"{address.get('streetNumber', '')} {address.get('streetName', '')}, {address.get('municipality', '')}"
-                ),
-                "location": {
-                    "lat": position.get('lat'),
-                    "lng": position.get('lon')
-                },
-                "phone": poi.get('phone'),
-                "website": poi.get('url'),
-                "categories": categories,
-                "hours": hours
-            }
-            parsed.append(place_data)
+            place_data = self._parse_place(result)
+            if place_data:
+                parsed.append(place_data)
         return parsed
+
+    def _parse_place(self, result):
+        poi = result.get('poi', {})
+        address = result.get('address', {})
+        position = result.get('position', {})
+        
+        hours = self._parse_opening_hours(poi.get('openingHours', {}))
+        
+        categories = []
+        for cset in poi.get('categorySet', []):
+            name = cset.get('name')
+            if name:
+                categories.append(name)
+
+        return {
+            "tomtom_id": result.get('id'),
+            "name": poi.get('name'),
+            # Construct a readable address
+            "address": address.get('freeformAddress', 
+                f"{address.get('streetNumber', '')} {address.get('streetName', '')}, {address.get('municipality', '')}"
+            ),
+            "location": {
+                "lat": position.get('lat'),
+                "lng": position.get('lon')
+            },
+            "phone": poi.get('phone'),
+            "website": poi.get('url'),
+            "categories": categories,
+            "hours": hours
+        }
 
     def _parse_opening_hours(self, opening_hours_data):
         """
@@ -135,8 +139,30 @@ class TomTomClient:
         return parsed_hours
 
     def get_place_details(self, tomtom_id):
-        # We can implement this later if needed, but search covers it.
-        pass
+        """
+        Fetch detailed information about a specific place using its unique identifier.
+        """
+        if not self.api_key or not tomtom_id:
+            return None
+
+        # Use the Place by ID endpoint
+        # https://api.tomtom.com/search/2/place.json?entityId={entityId}&key={Your_API_Key}
+        url = "https://api.tomtom.com/search/2/place.json"
+        params = {
+            "key": self.api_key,
+            "entityId": tomtom_id,
+            "openingHours": "nextSevenDays",
+        }
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            results = data.get('results', [])
+            if results:
+                return self._parse_place(results[0])
+        except requests.RequestException:
+            pass
+        return None
 
     def geocode_address(self, address: str):
         """

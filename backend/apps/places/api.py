@@ -85,6 +85,61 @@ class SavePlaceInput(Schema):
     tomtom_id: str
     custom_name: Optional[str] = None
 
+def _update_or_create_place_from_data(data: dict) -> Place:
+    """Helper to save TomTom data to our local Place model."""
+    with transaction.atomic():
+        location_data = data.get("location", {})
+        location = Point(location_data.get("lng"), location_data.get("lat"), srid=4326)
+        
+        place, created = Place.objects.get_or_create(
+            tomtom_id=data.get("tomtom_id"),
+            defaults={
+                "name": data.get("name"),
+                "address": data.get("address"),
+                "location": location,
+                "phone": data.get("phone"),
+                "website": data.get("website"),
+                "categories": data.get("categories", []),
+            }
+        )
+        
+        if not created:
+            updated = False
+            if location_data.get("lat") != place.location.y or location_data.get("lng") != place.location.x:
+                place.location = location
+                updated = True
+            if data.get("name") and place.name != data.get("name"):
+                place.name = data.get("name")
+                updated = True
+            if data.get("address") and place.address != data.get("address"):
+                place.address = data.get("address")
+                updated = True
+            if data.get("phone") and place.phone != data.get("phone"):
+                place.phone = data.get("phone")
+                updated = True
+            if data.get("website") and place.website != data.get("website"):
+                place.website = data.get("website")
+                updated = True
+            if data.get("categories") and place.categories != data.get("categories"):
+                place.categories = data.get("categories")
+                updated = True
+                
+            if updated:
+                place.save()
+        
+        # Update hours
+        hours_data = data.get("hours", [])
+        if hours_data:
+            place.hours.all().delete()
+            for hour in hours_data:
+                BusinessHours.objects.create(
+                    place=place,
+                    day_of_week=hour.get("day_of_week") if isinstance(hour, dict) else hour.day_of_week,
+                    open_time=hour.get("open_time") if isinstance(hour, dict) else hour.open_time,
+                    close_time=hour.get("close_time") if isinstance(hour, dict) else hour.close_time
+                )
+        return place
+
 # Endpoints
 
 @router.get("/search", response=List[PlaceCreateSchema])
@@ -114,49 +169,7 @@ def search_places(request, query: str):
 
 @router.post("/", response=PlaceSchema)
 def create_place(request, payload: PlaceCreateSchema):
-    with transaction.atomic():
-        location = Point(payload.location.lng, payload.location.lat, srid=4326)
-        place, created = Place.objects.get_or_create(
-            tomtom_id=payload.tomtom_id,
-            defaults={
-                "name": payload.name,
-                "address": payload.address,
-                "location": location,
-                "phone": payload.phone,
-                "website": payload.website,
-                "categories": payload.categories,
-            }
-        )
-        
-        if not created:
-            updated = False
-            if payload.location.lat != place.location.y or payload.location.lng != place.location.x:
-                place.location = location
-                updated = True
-            if payload.phone and place.phone != payload.phone:
-                place.phone = payload.phone
-                updated = True
-            if payload.website and place.website != payload.website:
-                place.website = payload.website
-                updated = True
-            if payload.categories and place.categories != payload.categories:
-                place.categories = payload.categories
-                updated = True
-                
-            if updated:
-                place.save()
-        
-        # Update hours
-        if payload.hours:
-            place.hours.all().delete()
-            for hour in payload.hours:
-                BusinessHours.objects.create(
-                    place=place,
-                    day_of_week=hour.day_of_week,
-                    open_time=hour.open_time,
-                    close_time=hour.close_time
-                )
-    return place
+    return _update_or_create_place_from_data(payload.dict())
 
 @router.post("/bookmark", response=SavedPlaceSchema)
 def bookmark_place(request, payload: SavePlaceInput):
@@ -249,13 +262,9 @@ def get_place_details(request, tomtom_id: str):
     
     # If not, fetch from TomTom and save
     client = TomTomClient()
-    details = client.get_place_details(tomtom_id) # Hypothetical method, need to implement in TomTomClient
+    details = client.get_place_details(tomtom_id)
     
-    # For now, let's assume search returns enough info or we implement get_place_details
-    # If get_place_details is not implemented, we might return 404 or handle differently.
-    # But sticking to plan: Fetch details, store in DB.
-    
-    # TODO: Implement full details fetch. For now, returning 404 if not cached 
-    # as we rely on search results being passed to create.
-    # Alternatively, we can use the create_place logic.
-    return 404
+    if not details:
+        return 404, {"detail": "Place not found in TomTom"}
+        
+    return _update_or_create_place_from_data(details)

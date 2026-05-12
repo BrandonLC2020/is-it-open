@@ -64,3 +64,32 @@ class PlaceApiTest(TestCase):
         self.assertEqual(response.status_code, 200)
         saved_place.refresh_from_db()
         self.assertTrue(saved_place.is_check_it_out)
+
+    def test_get_place_details_fetches_from_tomtom(self):
+        from unittest.mock import patch
+        
+        mock_details = {
+            "tomtom_id": "tom123",
+            "name": "TomTom Place",
+            "address": "456 Tom St",
+            "location": {"lat": 40.0, "lng": -70.0},
+            "phone": "555-0199",
+            "website": "https://tomtom.com",
+            "categories": ["Test"],
+            "hours": [{"day_of_week": 1, "open_time": "10:00", "close_time": "18:00"}]
+        }
+        
+        with patch("apps.places.api.TomTomClient.get_place_details") as mock_get:
+            mock_get.return_value = mock_details
+            
+            response = self.client.get("/api/places/tom123", **self.auth_headers)
+            
+            self.assertEqual(response.status_code, 200)
+            data = response.json()
+            self.assertEqual(data["name"], "TomTom Place")
+            self.assertEqual(data["tomtom_id"], "tom123")
+            
+            # Verify it's saved in DB
+            self.assertTrue(Place.objects.filter(tomtom_id="tom123").exists())
+            place = Place.objects.get(tomtom_id="tom123")
+            self.assertEqual(place.hours.count(), 1)
