@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/theme/theme_cubit.dart';
-import 'glass_container.dart';
 import '../../screens/profile/settings_screen.dart';
+import '../../utils/places_theme.dart';
 
 class SideMenu extends StatelessWidget {
   final Function(int) onIndexChanged;
@@ -17,6 +17,7 @@ class SideMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.places;
     // Access the current theme mode to determine switch state
     final themeMode = context.watch<ThemeCubit>().state;
     final isDarkMode =
@@ -24,99 +25,82 @@ class SideMenu extends StatelessWidget {
         (themeMode == ThemeMode.system &&
             MediaQuery.of(context).platformBrightness == Brightness.dark);
 
-    return GlassContainer(
-      width: 250,
-      blur: 15,
-      opacity: 0.1,
-      border: Border(
-        right: BorderSide(
-          color: Colors.white.withValues(alpha: 0.2),
-          width: 1.5,
-        ),
+    return Container(
+      width: 280,
+      decoration: BoxDecoration(
+        color: theme.paperRaised,
+        border: Border(right: BorderSide(color: theme.ashSoft, width: 1)),
       ),
-      child: Column(
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
-            ),
-            child: Center(
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
               child: Text(
                 'Is It Open',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: PlacesType.display(theme.ink).copyWith(fontSize: 28),
               ),
             ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildNavItem(context, 0, 'My Places', Icons.star),
-                _buildNavItem(context, 1, 'Calendar', Icons.calendar_month),
-                _buildNavItem(context, 2, 'Map', Icons.map),
-                _buildNavItem(context, 3, 'Search', Icons.search),
-                _buildNavItem(context, 4, 'Me', Icons.person),
-              ],
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                children: [
+                  _buildNavItem(context, 0, 'My Places', Icons.star_rounded),
+                  _buildNavItem(
+                    context,
+                    1,
+                    'Calendar',
+                    Icons.calendar_month_rounded,
+                  ),
+                  _buildNavItem(context, 2, 'Map', Icons.map_rounded),
+                  _buildNavItem(context, 3, 'Search', Icons.search_rounded),
+                  _buildNavItem(context, 4, 'Me', Icons.person_rounded),
+                ],
+              ),
             ),
-          ),
-          Divider(
-            color: Theme.of(
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Divider(color: theme.ashSoft, height: 1),
+            ),
+            const SizedBox(height: 12),
+            _buildActionItem(
               context,
-            ).colorScheme.onSurface.withValues(alpha: 0.2),
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.settings,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-            title: Text(
               'Settings',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
-            },
-          ),
-          ListTile(
-            leading: Icon(
-              isDarkMode ? Icons.dark_mode : Icons.light_mode,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-            title: Text(
-              isDarkMode ? 'Dark Mode' : 'Light Mode',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-            ),
-            trailing: Switch(
-              value: isDarkMode,
-              onChanged: (value) {
-                context.read<ThemeCubit>().setTheme(
-                  value ? ThemeMode.dark : ThemeMode.light,
+              Icons.settings_outlined,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
                 );
               },
-              activeThumbColor: Theme.of(context).primaryColor,
             ),
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.logout,
-              color: Theme.of(context).colorScheme.onSurface,
+            _buildActionItem(
+              context,
+              isDarkMode ? 'Dark Mode' : 'Light Mode',
+              isDarkMode ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+              trailing: Switch(
+                value: isDarkMode,
+                onChanged: (value) {
+                  context.read<ThemeCubit>().setTheme(
+                    value ? ThemeMode.dark : ThemeMode.light,
+                  );
+                },
+                activeTrackColor: theme.anchor.withValues(alpha: 0.3),
+                activeThumbColor: theme.anchor,
+              ),
             ),
-            title: Text(
+            _buildActionItem(
+              context,
               'Logout',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              Icons.logout_rounded,
+              onTap: () {
+                context.read<AuthBloc>().add(LogoutRequested());
+              },
             ),
-            onTap: () {
-              context.read<AuthBloc>().add(LogoutRequested());
-            },
-          ),
-          const SizedBox(height: 20),
-        ],
+            const SizedBox(height: 12),
+          ],
+        ),
       ),
     );
   }
@@ -127,27 +111,91 @@ class SideMenu extends StatelessWidget {
     String title,
     IconData icon,
   ) {
+    final theme = context.places;
     final isSelected = selectedIndex == index;
-    final fgColor = Theme.of(context).colorScheme.onSurface;
-    final unselectedColor = fgColor.withValues(alpha: 0.7);
 
-    return Container(
-      color: isSelected
-          ? Theme.of(context).primaryColor.withValues(alpha: 0.3)
-          : Colors.transparent,
-      child: ListTile(
-        leading: Icon(icon, color: isSelected ? fgColor : unselectedColor),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? fgColor : unselectedColor,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onIndexChanged(index),
+          borderRadius: BorderRadius.circular(PlacesRadius.md),
+          child: AnimatedContainer(
+            duration: PlacesMotion.standard,
+            curve: PlacesMotion.curve,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? theme.anchor.withValues(alpha: 0.08)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(PlacesRadius.md),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: isSelected ? theme.anchor : theme.inkMuted,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style:
+                        PlacesType.title(
+                          isSelected ? theme.anchor : theme.ink,
+                        ).copyWith(
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          fontSize: 15,
+                        ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        selected: isSelected,
-        onTap: () {
-          onIndexChanged(index);
-        },
+      ),
+    );
+  }
+
+  Widget _buildActionItem(
+    BuildContext context,
+    String title,
+    IconData icon, {
+    VoidCallback? onTap,
+    Widget? trailing,
+  }) {
+    final theme = context.places;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(PlacesRadius.md),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: theme.inkMuted),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: PlacesType.bodySmall(
+                      theme.ink,
+                    ).copyWith(fontWeight: FontWeight.w500),
+                  ),
+                ),
+                ?trailing,
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
