@@ -173,3 +173,7 @@ backend/db.sqlite3
 
 .gemini/
 gha-creds-*.json
+
+# Design context — kept local; carries product/visual strategy that isn't shipped.
+DESIGN.md
+PRODUCT.md
