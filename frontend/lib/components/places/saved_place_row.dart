@@ -87,10 +87,7 @@ class SavedPlaceRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: PlacesSpacing.sm),
-                  _TodayToggle(
-                    isOnToday: isOnToday,
-                    onTap: onToggleToday,
-                  ),
+                  _TodayToggle(isOnToday: isOnToday, onTap: onToggleToday),
                 ],
               ),
               if (showDivider)

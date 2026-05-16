@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:calendar_view/calendar_view.dart';
+
 import '../../components/calendar/calendar_header.dart';
 import '../../components/calendar/calendar_view_stack.dart';
 import '../../components/calendar/calendar_sidebar.dart';
@@ -12,6 +13,7 @@ import '../../bloc/calendar/calendar_ui_state.dart';
 import '../../bloc/calendar/calendar_data_bloc.dart';
 import '../../bloc/calendar/calendar_data_state.dart';
 import '../../utils/availability_calculator.dart';
+import '../../utils/places_theme.dart';
 
 class CalendarScreen extends StatelessWidget {
   const CalendarScreen({super.key});
@@ -49,17 +51,14 @@ class _CalendarScreenView extends StatelessWidget {
 class _CalendarScreenContent extends StatelessWidget {
   const _CalendarScreenContent();
 
+  // A curated "Pocket Field Guide" palette for POIs
   static const List<Color> _defaultPalette = [
-    Colors.blue,
-    Colors.red,
-    Colors.green,
-    Colors.orange,
-    Colors.purple,
-    Colors.teal,
-    Colors.pink,
-    Colors.brown,
-    Colors.indigo,
-    Colors.cyan,
+    Color(0xFFB14E27), // Anchor
+    Color(0xFFD99B52), // Ochre
+    Color(0xFF8F7A6A), // Taupe
+    Color(0xFF6B5344), // Chestnut
+    Color(0xFFB57D65), // Dusty Rose
+    Color(0xFF9E8B7E), // Mushroom
   ];
 
   static const Map<String, IconData> _availableIcons = {
@@ -88,6 +87,7 @@ class _CalendarScreenContent extends StatelessWidget {
   EventController<Object?> _buildEventController(
     CalendarDataState dataState,
     CalendarUiState uiState,
+    Color personalEventColor,
   ) {
     final controller = EventController<Object?>();
     final now = DateTime.now();
@@ -107,10 +107,7 @@ class _CalendarScreenContent extends StatelessWidget {
           continue;
         }
 
-        final color = _colorForPlace(
-          sp,
-          colorIndex,
-        ).withValues(alpha: 1.0); // Solid for contrast
+        final color = _colorForPlace(sp, colorIndex).withValues(alpha: 1.0);
         final label = displayName(sp);
 
         for (int weekOffset = -4; weekOffset <= 12; weekOffset++) {
@@ -152,9 +149,15 @@ class _CalendarScreenContent extends StatelessWidget {
     }
 
     final allPersonalEvents = [
-      ...dataState.deviceEvents,
-      ...dataState.importedEvents,
-      ...dataState.remoteEvents,
+      ...dataState.deviceEvents.map(
+        (e) => _recolorEvent(e, personalEventColor),
+      ),
+      ...dataState.importedEvents.map(
+        (e) => _recolorEvent(e, personalEventColor),
+      ),
+      ...dataState.remoteEvents.map(
+        (e) => _recolorEvent(e, personalEventColor),
+      ),
     ];
 
     final timedPersonalEvents = allPersonalEvents
@@ -178,10 +181,24 @@ class _CalendarScreenContent extends StatelessWidget {
     return controller;
   }
 
+  CalendarEventData<Object?> _recolorEvent(
+    CalendarEventData<Object?> event,
+    Color color,
+  ) {
+    return CalendarEventData(
+      title: event.title,
+      description: event.description,
+      date: event.date,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      color: color,
+      event: event.event,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
+    final theme = context.places;
     final use24HourFormat = context
         .watch<PreferencesCubit>()
         .state
@@ -192,7 +209,11 @@ class _CalendarScreenContent extends StatelessWidget {
       builder: (context, uiState) {
         return BlocBuilder<CalendarDataBloc, CalendarDataState>(
           builder: (context, dataState) {
-            final controller = _buildEventController(dataState, uiState);
+            final controller = _buildEventController(
+              dataState,
+              uiState,
+              theme.inkMuted,
+            );
 
             Widget sidebarContent = CalendarSidebarWidget(
               dataState: dataState,
@@ -205,51 +226,47 @@ class _CalendarScreenContent extends StatelessWidget {
               uiState: uiState,
               controller: controller,
               checkedPlacesCount: dataState.checkedPlaceIds.length,
-              textColor: colorScheme.onSurface,
-              textSmallColor: colorScheme.onSurfaceVariant,
+              textColor: theme.ink,
+              textSmallColor: theme.inkMuted,
               use24HourFormat: use24HourFormat,
             );
 
             return Scaffold(
+              backgroundColor: theme.paper,
               appBar: AppBar(
-                title: const Text('Calendar'),
-                backgroundColor: Colors.transparent,
+                title: Text('Plan', style: PlacesType.headline(theme.ink)),
+                backgroundColor: theme.paper,
                 elevation: 0,
+                scrolledUnderElevation: 0,
+                iconTheme: IconThemeData(color: theme.ink),
                 actions: [
-                  IconButton(
-                    icon: Icon(
-                      uiState.showBusinessHours
-                          ? Icons.business_center
-                          : Icons.business_center_outlined,
-                      color: uiState.showBusinessHours
-                          ? Colors.green
-                          : Colors.grey,
-                    ),
-                    tooltip: 'Toggle Business Hours',
-                    onPressed: () {
-                      context.read<CalendarUiCubit>().toggleBusinessHours();
-                    },
+                  _buildToggleAction(
+                    context: context,
+                    isActive: uiState.showBusinessHours,
+                    icon: Icons.business_center,
+                    label: 'Places',
+                    activeColor: theme.anchor,
+                    onTap: () =>
+                        context.read<CalendarUiCubit>().toggleBusinessHours(),
                   ),
-                  IconButton(
-                    icon: Icon(
-                      uiState.showPersonalEvents
-                          ? Icons.person
-                          : Icons.person_outline,
-                      color: uiState.showPersonalEvents
-                          ? Colors.blue
-                          : Colors.grey,
-                    ),
-                    tooltip: 'Toggle Personal Events',
-                    onPressed: () {
-                      context.read<CalendarUiCubit>().togglePersonalEvents();
-                    },
+                  const SizedBox(width: 8),
+                  _buildToggleAction(
+                    context: context,
+                    isActive: uiState.showPersonalEvents,
+                    icon: Icons.person,
+                    label: 'Personal',
+                    activeColor: theme.inkMuted,
+                    onTap: () =>
+                        context.read<CalendarUiCubit>().togglePersonalEvents(),
                   ),
-                  if (!isMobile)
+                  if (!isMobile) ...[
+                    const SizedBox(width: 16),
                     IconButton(
                       icon: Icon(
                         uiState.isSidebarCollapsed
                             ? Icons.chevron_left
                             : Icons.chevron_right,
+                        color: theme.ink,
                       ),
                       tooltip: uiState.isSidebarCollapsed
                           ? 'Expand Sidebar'
@@ -258,8 +275,10 @@ class _CalendarScreenContent extends StatelessWidget {
                         context.read<CalendarUiCubit>().toggleSidebar();
                       },
                     ),
+                  ],
+                  const SizedBox(width: 16),
                   Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
+                    padding: const EdgeInsets.only(right: 16.0),
                     child: CalendarHeaderWidget(
                       currentView: uiState.currentView,
                     ),
@@ -267,23 +286,29 @@ class _CalendarScreenContent extends StatelessWidget {
                   if (isMobile)
                     Builder(
                       builder: (ctx) => IconButton(
-                        icon: const Icon(Icons.filter_list),
+                        icon: Icon(Icons.filter_list, color: theme.ink),
                         onPressed: () => Scaffold.of(ctx).openEndDrawer(),
                       ),
                     ),
                 ],
               ),
-              endDrawer: isMobile ? Drawer(child: sidebarContent) : null,
+              endDrawer: isMobile
+                  ? Drawer(
+                      backgroundColor: theme.paper,
+                      child: SafeArea(child: sidebarContent),
+                    )
+                  : null,
               body: isMobile
                   ? calendarContent
                   : Row(
                       children: [
                         Expanded(child: calendarContent),
-                        const VerticalDivider(width: 1),
+                        VerticalDivider(width: 1, color: theme.ashSoft),
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
-                          width: uiState.isSidebarCollapsed ? 64 : 300,
+                          width: uiState.isSidebarCollapsed ? 64 : 320,
+                          color: theme.paperRaised,
                           child: sidebarContent,
                         ),
                       ],
@@ -292,6 +317,53 @@ class _CalendarScreenContent extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  Widget _buildToggleAction({
+    required BuildContext context,
+    required bool isActive,
+    required IconData icon,
+    required String label,
+    required Color activeColor,
+    required VoidCallback onTap,
+  }) {
+    final theme = context.places;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive
+              ? activeColor.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(PlacesRadius.lg),
+          border: Border.all(
+            color: isActive ? activeColor.withValues(alpha: 0.3) : theme.ash,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isActive ? activeColor : theme.inkMuted,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: PlacesType.label(isActive ? activeColor : theme.inkMuted)
+                  .copyWith(
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                    letterSpacing: 0,
+                  ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -39,9 +39,9 @@ class _PlanVisitScreenState extends State<PlanVisitScreen> {
     });
     try {
       await context.read<ApiService>().updateVisitLength(
-            widget.place.tomtomId,
-            minutes,
-          );
+        widget.place.tomtomId,
+        minutes,
+      );
     } catch (e) {
       setState(() => _current = previous);
       if (mounted) {
@@ -60,8 +60,9 @@ class _PlanVisitScreenState extends State<PlanVisitScreen> {
     final use24h = context.watch<PreferencesCubit>().state.use24HourFormat;
     final name = widget.saved.customName ?? widget.place.name;
     final today = DateTime.now().weekday - 1;
-    final todayBlocks = widget.place.hours.where((h) => h.dayOfWeek == today).toList()
-      ..sort((a, b) => _mins(a.openTime).compareTo(_mins(b.openTime)));
+    final todayBlocks =
+        widget.place.hours.where((h) => h.dayOfWeek == today).toList()
+          ..sort((a, b) => _mins(a.openTime).compareTo(_mins(b.openTime)));
 
     return Scaffold(
       backgroundColor: theme.paper,
@@ -81,9 +82,16 @@ class _PlanVisitScreenState extends State<PlanVisitScreen> {
         top: false,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
-            PlacesSpacing.lg, PlacesSpacing.md, PlacesSpacing.lg, PlacesSpacing.xxl),
+            PlacesSpacing.lg,
+            PlacesSpacing.md,
+            PlacesSpacing.lg,
+            PlacesSpacing.xxl,
+          ),
           children: [
-            Text(name, style: PlacesType.display(theme.ink).copyWith(fontSize: 26)),
+            Text(
+              name,
+              style: PlacesType.display(theme.ink).copyWith(fontSize: 26),
+            ),
             const SizedBox(height: PlacesSpacing.lg),
             _SectionLabel('Typical visit'),
             const SizedBox(height: PlacesSpacing.sm),
@@ -119,11 +127,7 @@ class _PlanVisitScreenState extends State<PlanVisitScreen> {
               ),
               const SizedBox(height: PlacesSpacing.md),
               for (final b in todayBlocks)
-                _WindowRow(
-                  block: b,
-                  visitLength: _current,
-                  use24h: use24h,
-                ),
+                _WindowRow(block: b, visitLength: _current, use24h: use24h),
             ] else ...[
               const SizedBox(height: PlacesSpacing.xxl),
               _SectionLabel("Today's windows"),
@@ -167,10 +171,9 @@ class _SectionLabel extends StatelessWidget {
     final theme = context.places;
     return Text(
       text.toUpperCase(),
-      style: PlacesType.label(theme.inkMuted).copyWith(
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.8,
-      ),
+      style: PlacesType.label(
+        theme.inkMuted,
+      ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.8),
     );
   }
 }
@@ -200,7 +203,9 @@ class _DurationChip extends StatelessWidget {
           duration: PlacesMotion.standard,
           curve: PlacesMotion.curve,
           padding: const EdgeInsets.symmetric(
-            horizontal: PlacesSpacing.lg, vertical: PlacesSpacing.sm),
+            horizontal: PlacesSpacing.lg,
+            vertical: PlacesSpacing.sm,
+          ),
           decoration: BoxDecoration(
             color: selected ? theme.anchor : Colors.transparent,
             borderRadius: BorderRadius.circular(PlacesRadius.pill),
@@ -244,7 +249,9 @@ class _WindowRow extends StatelessWidget {
     if (closeMin <= openMin) closeMin = 24 * 60; // cross-midnight: cap at today
     final nowMin = now.hour * 60 + now.minute;
 
-    final effectiveStart = nowMin > openMin && nowMin < closeMin ? nowMin : openMin;
+    final effectiveStart = nowMin > openMin && nowMin < closeMin
+        ? nowMin
+        : openMin;
     final remaining = closeMin - effectiveStart;
     final fullDuration = closeMin - openMin;
     final inProgress = nowMin >= openMin && nowMin < closeMin;
@@ -284,8 +291,12 @@ class _WindowRow extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 10, height: 10,
-            decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: PlacesSpacing.md),
           Expanded(

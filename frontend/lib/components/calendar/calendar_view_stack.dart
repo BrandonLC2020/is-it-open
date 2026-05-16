@@ -5,6 +5,7 @@ import 'package:calendar_view/calendar_view.dart';
 
 import '../../bloc/calendar/calendar_ui_state.dart';
 import '../../bloc/calendar/calendar_ui_cubit.dart';
+import '../../utils/places_theme.dart';
 import 'calendar_event_tile.dart';
 import 'calendar_header.dart';
 import 'event_details_popup.dart';
@@ -24,9 +25,12 @@ Widget _buildTimeLineLabel(
       : DateFormat(
           'h a',
         ).format(DateTime(date.year, date.month, date.day, date.hour));
-  final label = Center(
-    child: Text(timeString, style: TextStyle(color: labelColor, fontSize: 12)),
-  );
+
+  final textStyle = PlacesType.label(
+    labelColor,
+  ).copyWith(fontSize: 11, letterSpacing: 0, fontWeight: FontWeight.w500);
+
+  final label = Center(child: Text(timeString, style: textStyle));
 
   if (date.hour == 1) {
     final midnightString = use24HourFormat ? '00:00' : '12 AM';
@@ -39,12 +43,7 @@ Widget _buildTimeLineLabel(
           height: 60,
           left: 0,
           right: 0,
-          child: Center(
-            child: Text(
-              midnightString,
-              style: TextStyle(color: labelColor, fontSize: 12),
-            ),
-          ),
+          child: Center(child: Text(midnightString, style: textStyle)),
         ),
       ],
     );
@@ -72,6 +71,8 @@ class CalendarViewStackWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.places;
+
     List<WeekDays> weekDays = WeekDays.values;
     int daysToAdvance = 0;
 
@@ -112,15 +113,11 @@ class CalendarViewStackWidget extends StatelessWidget {
         scrollOffset: initialScrollOffset,
         minDay: uiState.baseDate.subtract(const Duration(days: 28)),
         maxDay: uiState.baseDate.add(const Duration(days: 84)),
-        heightPerMinute: 1,
+        heightPerMinute: 1.2,
         scrollPhysics: const ClampingScrollPhysics(),
         pageViewPhysics: const NeverScrollableScrollPhysics(),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        headerStyle: HeaderStyle(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-          ),
-        ),
+        backgroundColor: theme.paper,
+        headerStyle: HeaderStyle(decoration: BoxDecoration(color: theme.paper)),
         eventArranger: const StackEventArranger(),
         eventTileBuilder:
             (date, events, boundary, startDuration, endDuration) =>
@@ -154,35 +151,36 @@ class CalendarViewStackWidget extends StatelessWidget {
             onTap: () {
               showModalBottomSheet(
                 context: context,
+                backgroundColor: theme.paper,
                 builder: (context) =>
                     _AllDayEventsSheet(date: date, events: allDayEvents),
               );
             },
             child: Container(
               padding: const EdgeInsets.all(8),
-              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+              color: theme.anchor.withValues(alpha: 0.1),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.event_note, size: 16),
+                  Icon(Icons.event_note, size: 16, color: theme.anchor),
                   const SizedBox(width: 8),
-                  Text('${allDayEvents.length} All-Day Event(s)'),
+                  Text(
+                    '${allDayEvents.length} All-Day Event(s)',
+                    style: PlacesType.label(
+                      theme.anchor,
+                    ).copyWith(fontWeight: FontWeight.w600),
+                  ),
                 ],
               ),
             ),
           );
         },
-        hourIndicatorSettings: HourIndicatorSettings(
-          color: Theme.of(context).dividerColor,
-        ),
+        hourIndicatorSettings: HourIndicatorSettings(color: theme.ashSoft),
         liveTimeIndicatorSettings: LiveTimeIndicatorSettings(
-          color: Theme.of(context).colorScheme.primary,
+          color: theme.anchor,
         ),
-        timeLineBuilder: (date) => _buildTimeLineLabel(
-          date,
-          use24HourFormat,
-          Theme.of(context).textTheme.bodySmall?.color ?? textSmallColor,
-        ),
+        timeLineBuilder: (date) =>
+            _buildTimeLineLabel(date, use24HourFormat, textSmallColor),
       );
     } else {
       calendarWidget = WeekView(
@@ -198,16 +196,12 @@ class CalendarViewStackWidget extends StatelessWidget {
             ? WeekDays.values[uiState.baseDate.weekday - 1]
             : WeekDays.monday,
         weekDays: weekDays,
-        heightPerMinute: 1,
+        heightPerMinute: 1.2,
         scrollPhysics: const ClampingScrollPhysics(),
         pageViewPhysics: const NeverScrollableScrollPhysics(),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        headerStyle: HeaderStyle(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-          ),
-        ),
-        weekTitleBackgroundColor: const Color(0xFF1565C0),
+        backgroundColor: theme.paper,
+        headerStyle: HeaderStyle(decoration: BoxDecoration(color: theme.paper)),
+        weekTitleBackgroundColor: theme.paper,
         eventArranger: const StackEventArranger(),
         eventTileBuilder:
             (date, events, boundary, startDuration, endDuration) =>
@@ -230,18 +224,13 @@ class CalendarViewStackWidget extends StatelessWidget {
         showLiveTimeLineInAllDays: true,
         weekPageHeaderBuilder: (start, end) => const SizedBox.shrink(),
         weekNumberBuilder: (date) => const SizedBox.shrink(),
-        hourIndicatorSettings: HourIndicatorSettings(
-          color: Theme.of(context).dividerColor,
-        ),
+        hourIndicatorSettings: HourIndicatorSettings(color: theme.ashSoft),
         liveTimeIndicatorSettings: LiveTimeIndicatorSettings(
-          color: Theme.of(context).colorScheme.primary,
+          color: theme.anchor,
           showBullet: false,
         ),
-        timeLineBuilder: (date) => _buildTimeLineLabel(
-          date,
-          use24HourFormat,
-          Theme.of(context).textTheme.bodySmall?.color ?? textSmallColor,
-        ),
+        timeLineBuilder: (date) =>
+            _buildTimeLineLabel(date, use24HourFormat, textSmallColor),
         weekDayBuilder: (date) {
           final isToday = DateUtils.isSameDay(date, DateTime.now());
           final dayEvents = controller.getEventsOnDay(date);
@@ -255,6 +244,7 @@ class CalendarViewStackWidget extends StatelessWidget {
               if (hasAllDay) {
                 showModalBottomSheet(
                   context: context,
+                  backgroundColor: theme.paper,
                   builder: (context) =>
                       _AllDayEventsSheet(date: date, events: allDayEvents),
                 );
@@ -262,45 +252,55 @@ class CalendarViewStackWidget extends StatelessWidget {
             },
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 4,
+                  horizontal: 8,
+                ), // Reduced from 6 to 4 to fix overflow
                 decoration: isToday
                     ? BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.4),
-                        ),
+                        color: theme.anchor,
+                        borderRadius: BorderRadius.circular(8),
                       )
                     : null,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      _weekDayShortName(date.weekday),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      _weekDayShortName(date.weekday).toUpperCase(),
+                      style:
+                          PlacesType.label(
+                            isToday ? Colors.white : textColor,
+                          ).copyWith(
+                            fontSize: 10,
+                            fontWeight: isToday
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
                     ),
+                    const SizedBox(height: 2),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '${date.month}/${date.day}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          '${date.day}',
+                          style:
+                              PlacesType.title(
+                                isToday ? Colors.white : textColor,
+                              ).copyWith(
+                                fontSize: 15,
+                                fontWeight: isToday
+                                    ? FontWeight.w700
+                                    : FontWeight.w600,
+                              ),
                         ),
                         if (hasAllDay) ...[
                           const SizedBox(width: 4),
                           Container(
                             width: 6,
                             height: 6,
-                            decoration: const BoxDecoration(
-                              color: Colors.blueAccent,
+                            decoration: BoxDecoration(
+                              color: isToday ? Colors.white : theme.anchor,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -319,11 +319,12 @@ class CalendarViewStackWidget extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           child: Row(
             children: [
               IconButton(
                 icon: const Icon(Icons.chevron_left),
+                color: textColor,
                 onPressed: () {
                   context.read<CalendarUiCubit>().navigateDate(
                     uiState.baseDate.subtract(Duration(days: daysToAdvance)),
@@ -337,14 +338,12 @@ class CalendarViewStackWidget extends StatelessWidget {
                     uiState.baseDate,
                   ),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: PlacesType.title(textColor),
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.chevron_right),
+                color: textColor,
                 onPressed: () {
                   context.read<CalendarUiCubit>().navigateDate(
                     uiState.baseDate.add(Duration(days: daysToAdvance)),
@@ -352,12 +351,17 @@ class CalendarViewStackWidget extends StatelessWidget {
                 },
               ),
               if (!isShowingToday)
-                TextButton.icon(
+                TextButton(
                   onPressed: () => context.read<CalendarUiCubit>().navigateDate(
                     DateTime.now(),
                   ),
-                  icon: const Icon(Icons.today, size: 18),
-                  label: const Text('Today'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: theme.anchor,
+                    textStyle: PlacesType.label(
+                      theme.anchor,
+                    ).copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  child: const Text('Today'),
                 ),
             ],
           ),
@@ -366,14 +370,14 @@ class CalendarViewStackWidget extends StatelessWidget {
           child: Theme(
             data: Theme.of(context).copyWith(
               colorScheme: Theme.of(context).colorScheme.copyWith(
-                secondaryContainer: Theme.of(context).scaffoldBackgroundColor,
-                primaryContainer: Theme.of(context).scaffoldBackgroundColor,
-                surface: Theme.of(context).scaffoldBackgroundColor,
+                secondaryContainer: theme.paper,
+                primaryContainer: theme.paper,
+                surface: theme.paper,
                 error: Colors.transparent,
               ),
-              canvasColor: Theme.of(context).scaffoldBackgroundColor,
-              cardColor: Theme.of(context).scaffoldBackgroundColor,
-              secondaryHeaderColor: Theme.of(context).scaffoldBackgroundColor,
+              canvasColor: theme.paper,
+              cardColor: theme.paper,
+              secondaryHeaderColor: theme.paper,
             ),
             child: calendarWidget,
           ),
@@ -391,11 +395,11 @@ class _AllDayEventsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.places;
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -403,27 +407,37 @@ class _AllDayEventsSheet extends StatelessWidget {
         children: [
           Text(
             'All-Day Events for ${date.month}/${date.day}',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: PlacesType.headline(theme.ink),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Flexible(
             child: ListView.builder(
               shrinkWrap: true,
               itemCount: events.length,
               itemBuilder: (context, index) {
                 final event = events[index];
-                return ListTile(
-                  leading: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: event.color,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  title: Text(
-                    event.title,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 6),
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: event.color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          event.title,
+                          style: PlacesType.body(theme.ink),
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },

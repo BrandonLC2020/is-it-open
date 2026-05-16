@@ -36,35 +36,37 @@ class PlacesTheme extends ThemeExtension<PlacesTheme> {
     required this.unknownOutline,
   });
 
-  final Color anchor;             // primary warm earth (terracotta family). DESIGN.md §2 Primary.
-  final Color anchorOnContrast;   // foreground laid on anchor (paper-warm on light, ink-warm on dark).
-  final Color paper;              // default surface (paper-warm light / ink-warm dark).
-  final Color paperRaised;        // raised surface for sheets, dialogs.
-  final Color ash;                // dividers, low-contrast borders.
-  final Color ashSoft;            // softest line, e.g. row separators.
-  final Color ink;                // primary content text.
-  final Color inkMuted;           // supporting text, addresses, distance.
-  final Color openColor;          // semantic — Open Now.
+  final Color
+  anchor; // primary warm earth (terracotta family). DESIGN.md §2 Primary.
+  final Color
+  anchorOnContrast; // foreground laid on anchor (paper-warm on light, ink-warm on dark).
+  final Color paper; // default surface (paper-warm light / ink-warm dark).
+  final Color paperRaised; // raised surface for sheets, dialogs.
+  final Color ash; // dividers, low-contrast borders.
+  final Color ashSoft; // softest line, e.g. row separators.
+  final Color ink; // primary content text.
+  final Color inkMuted; // supporting text, addresses, distance.
+  final Color openColor; // semantic — Open Now.
   final Color openOnContrast;
-  final Color closingColor;       // semantic — Closes Soon.
+  final Color closingColor; // semantic — Closes Soon.
   final Color closingOnContrast;
-  final Color closedColor;        // semantic — Closed.
+  final Color closedColor; // semantic — Closed.
   final Color closedOnContrast;
-  final Color unknownOutline;     // outlined pill stroke for Hours Unknown.
+  final Color unknownOutline; // outlined pill stroke for Hours Unknown.
 
   Color statusColor(PlaceStatusKind k) => switch (k) {
-        PlaceStatusKind.open => openColor,
-        PlaceStatusKind.closingSoon => closingColor,
-        PlaceStatusKind.closed => closedColor,
-        PlaceStatusKind.unknown => ash,
-      };
+    PlaceStatusKind.open => openColor,
+    PlaceStatusKind.closingSoon => closingColor,
+    PlaceStatusKind.closed => closedColor,
+    PlaceStatusKind.unknown => ash,
+  };
 
   Color statusOnContrast(PlaceStatusKind k) => switch (k) {
-        PlaceStatusKind.open => openOnContrast,
-        PlaceStatusKind.closingSoon => closingOnContrast,
-        PlaceStatusKind.closed => closedOnContrast,
-        PlaceStatusKind.unknown => inkMuted,
-      };
+    PlaceStatusKind.open => openOnContrast,
+    PlaceStatusKind.closingSoon => closingOnContrast,
+    PlaceStatusKind.closed => closedOnContrast,
+    PlaceStatusKind.unknown => inkMuted,
+  };
 
   @override
   PlacesTheme copyWith({
@@ -108,7 +110,11 @@ class PlacesTheme extends ThemeExtension<PlacesTheme> {
     if (other is! PlacesTheme) return this;
     return PlacesTheme(
       anchor: Color.lerp(anchor, other.anchor, t)!,
-      anchorOnContrast: Color.lerp(anchorOnContrast, other.anchorOnContrast, t)!,
+      anchorOnContrast: Color.lerp(
+        anchorOnContrast,
+        other.anchorOnContrast,
+        t,
+      )!,
       paper: Color.lerp(paper, other.paper, t)!,
       paperRaised: Color.lerp(paperRaised, other.paperRaised, t)!,
       ash: Color.lerp(ash, other.ash, t)!,
@@ -118,9 +124,17 @@ class PlacesTheme extends ThemeExtension<PlacesTheme> {
       openColor: Color.lerp(openColor, other.openColor, t)!,
       openOnContrast: Color.lerp(openOnContrast, other.openOnContrast, t)!,
       closingColor: Color.lerp(closingColor, other.closingColor, t)!,
-      closingOnContrast: Color.lerp(closingOnContrast, other.closingOnContrast, t)!,
+      closingOnContrast: Color.lerp(
+        closingOnContrast,
+        other.closingOnContrast,
+        t,
+      )!,
       closedColor: Color.lerp(closedColor, other.closedColor, t)!,
-      closedOnContrast: Color.lerp(closedOnContrast, other.closedOnContrast, t)!,
+      closedOnContrast: Color.lerp(
+        closedOnContrast,
+        other.closedOnContrast,
+        t,
+      )!,
       unknownOutline: Color.lerp(unknownOutline, other.unknownOutline, t)!,
     );
   }
@@ -128,31 +142,33 @@ class PlacesTheme extends ThemeExtension<PlacesTheme> {
   // Translated from DESIGN.md OKLCH targets. The light theme is the design's home
   // (sunlight scene sentence, §3 of the brief); dark is a system-respecting variant.
   static const light = PlacesTheme(
-    anchor: Color(0xFFB14E27),            // ≈ oklch(54% 0.14 45)
+    anchor: Color(0xFFB14E27), // ≈ oklch(54% 0.14 45)
     anchorOnContrast: Color(0xFFF7F3EC),
-    paper: Color(0xFFF7F3EC),             // ≈ oklch(96% 0.008 70)
-    paperRaised: Color(0xFFFFFAF1),       // ≈ oklch(98% 0.008 70)
-    ash: Color(0xFFC9C1B2),               // ≈ oklch(80% 0.012 70)
-    ashSoft: Color(0xFFE5DECF),           // ≈ oklch(90% 0.010 70)
-    ink: Color(0xFF231F1B),               // ≈ oklch(20% 0.010 60)
-    inkMuted: Color(0xFF6B6258),          // ≈ oklch(46% 0.012 60)
-    openColor: Color(0xFF2F6B3A),         // ≈ oklch(46% 0.13 145)
+    paper: Color(0xFFF7F3EC), // ≈ oklch(96% 0.008 70)
+    paperRaised: Color(0xFFFFFAF1), // ≈ oklch(98% 0.008 70)
+    ash: Color(0xFFC9C1B2), // ≈ oklch(80% 0.012 70)
+    ashSoft: Color(0xFFE5DECF), // ≈ oklch(90% 0.010 70)
+    ink: Color(0xFF231F1B), // ≈ oklch(20% 0.010 60)
+    inkMuted: Color(0xFF6B6258), // ≈ oklch(46% 0.012 60)
+    openColor: Color(0xFF2F6B3A), // ≈ oklch(46% 0.13 145)
     openOnContrast: Color(0xFFF7F3EC),
-    closingColor: Color(0xFF9C5E12),      // ≈ oklch(50% 0.13 65)
+    closingColor: Color(0xFF9C5E12), // ≈ oklch(50% 0.13 65)
     closingOnContrast: Color(0xFFF7F3EC),
-    closedColor: Color(0xFF6E665B),       // ≈ oklch(46% 0.02 60), desaturated by design
+    closedColor: Color(
+      0xFF6E665B,
+    ), // ≈ oklch(46% 0.02 60), desaturated by design
     closedOnContrast: Color(0xFFF7F3EC),
     unknownOutline: Color(0xFFB0A899),
   );
 
   static const dark = PlacesTheme(
-    anchor: Color(0xFFD97A52),            // brightened to hold contrast on dark surface
+    anchor: Color(0xFFD97A52), // brightened to hold contrast on dark surface
     anchorOnContrast: Color(0xFF1C1916),
-    paper: Color(0xFF1C1916),             // warm near-black, never pure #000
+    paper: Color(0xFF1C1916), // warm near-black, never pure #000
     paperRaised: Color(0xFF26221E),
     ash: Color(0xFF3A352E),
     ashSoft: Color(0xFF2D2924),
-    ink: Color(0xFFEDE6D9),               // warm cream, never pure #fff
+    ink: Color(0xFFEDE6D9), // warm cream, never pure #fff
     inkMuted: Color(0xFFAFA697),
     openColor: Color(0xFF7CB68A),
     openOnContrast: Color(0xFF1C1916),
@@ -171,51 +187,51 @@ class PlacesType {
   // chain until a bundled serif is added.
 
   static TextStyle display(Color color) => TextStyle(
-        fontFamilyFallback: _serifFallbacks,
-        color: color,
-        fontSize: 32,
-        height: 1.05,
-        fontWeight: FontWeight.w500,
-        letterSpacing: -0.4,
-      );
+    fontFamilyFallback: _serifFallbacks,
+    color: color,
+    fontSize: 32,
+    height: 1.05,
+    fontWeight: FontWeight.w500,
+    letterSpacing: -0.4,
+  );
 
   static TextStyle headline(Color color) => TextStyle(
-        fontFamilyFallback: _serifFallbacks,
-        color: color,
-        fontSize: 22,
-        height: 1.15,
-        fontWeight: FontWeight.w500,
-        letterSpacing: -0.2,
-      );
+    fontFamilyFallback: _serifFallbacks,
+    color: color,
+    fontSize: 22,
+    height: 1.15,
+    fontWeight: FontWeight.w500,
+    letterSpacing: -0.2,
+  );
 
   static TextStyle title(Color color) => TextStyle(
-        color: color,
-        fontSize: 17,
-        height: 1.25,
-        fontWeight: FontWeight.w600,
-      );
+    color: color,
+    fontSize: 17,
+    height: 1.25,
+    fontWeight: FontWeight.w600,
+  );
 
   static TextStyle body(Color color) => TextStyle(
-        color: color,
-        fontSize: 16,
-        height: 1.45,
-        fontWeight: FontWeight.w400,
-      );
+    color: color,
+    fontSize: 16,
+    height: 1.45,
+    fontWeight: FontWeight.w400,
+  );
 
   static TextStyle bodySmall(Color color) => TextStyle(
-        color: color,
-        fontSize: 14,
-        height: 1.4,
-        fontWeight: FontWeight.w400,
-      );
+    color: color,
+    fontSize: 14,
+    height: 1.4,
+    fontWeight: FontWeight.w400,
+  );
 
   static TextStyle label(Color color) => TextStyle(
-        color: color,
-        fontSize: 12,
-        height: 1.2,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.4,
-      );
+    color: color,
+    fontSize: 12,
+    height: 1.2,
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0.4,
+  );
 }
 
 class PlacesSpacing {

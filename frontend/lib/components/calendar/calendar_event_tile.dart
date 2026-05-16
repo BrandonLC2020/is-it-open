@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:calendar_view/calendar_view.dart';
 import 'dart:math' as math;
-import '../shared/glass_card.dart';
+import '../../utils/places_theme.dart';
 
 class CalendarEventTileWidget extends StatelessWidget {
   final DateTime date;
@@ -24,54 +24,56 @@ class CalendarEventTileWidget extends StatelessWidget {
     if (events.isEmpty) return const SizedBox.shrink();
     final event = events[0];
 
-    // Heuristic: Business blocks have alpha 1.0 (set in controller builder)
-    final isBusinessBlock = event.color.a == 1.0;
+    // Heuristic: Business blocks are distinct from personal events based on the color assignment in the controller.
+    // Personal events are assigned theme.inkMuted (set in CalendarScreen).
+    final theme = context.places;
+    final isPersonalEvent = event.color == theme.inkMuted;
+    final isBusinessBlock = !isPersonalEvent;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
         color: isBusinessBlock
-            ? event.color.withValues(alpha: 0.8)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(4),
-        border: isBusinessBlock
-            ? null
-            : Border.all(color: event.color.withValues(alpha: 0.5), width: 1),
+            ? event.color.withValues(alpha: 0.15)
+            : event.color.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isBusinessBlock
+              ? event.color.withValues(alpha: 0.5)
+              : event.color,
+          width: 1.5,
+        ),
       ),
       child: isBusinessBlock
-          ? _buildBusinessBlock(event)
-          : _buildPersonalCutout(event),
+          ? _buildBusinessBlock(context, event)
+          : _buildPersonalBlock(context, event),
     );
   }
 
-  Widget _buildBusinessBlock(CalendarEventData event) {
+  Widget _buildBusinessBlock(BuildContext context, CalendarEventData event) {
     return Padding(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       child: Text(
         event.title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-        ),
-        maxLines: 1,
+        style: PlacesType.label(
+          event.color,
+        ).copyWith(fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0),
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
     );
   }
 
-  Widget _buildPersonalCutout(CalendarEventData event) {
+  Widget _buildPersonalBlock(BuildContext context, CalendarEventData event) {
     return Padding(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       child: Text(
         event.title,
-        style: TextStyle(
-          color: event.color.withValues(alpha: 0.8),
-          fontSize: 11,
-          fontStyle: FontStyle.italic,
-        ),
-        maxLines: 1,
+        style: PlacesType.label(
+          Colors.white,
+        ).copyWith(fontSize: 11, fontWeight: FontWeight.w500, letterSpacing: 0),
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
     );
@@ -90,6 +92,7 @@ class FullDayEventWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.places;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -97,14 +100,24 @@ class FullDayEventWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: events.map((event) {
+          final isPersonalEvent = event.color == theme.inkMuted;
+          final isBusinessBlock = !isPersonalEvent;
+
           return Padding(
-            padding: const EdgeInsets.only(bottom: 2),
-            child: GlassCard(
-              color: event.color,
-              opacity: 0.3,
-              blur: 10,
-              padding: EdgeInsets.zero,
-              borderRadius: BorderRadius.circular(4),
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isBusinessBlock
+                    ? event.color.withValues(alpha: 0.15)
+                    : event.color.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: isBusinessBlock
+                      ? event.color.withValues(alpha: 0.5)
+                      : event.color,
+                  width: 1,
+                ),
+              ),
               child: IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -114,8 +127,8 @@ class FullDayEventWidget extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: event.color,
                         borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(4),
-                          bottomLeft: Radius.circular(4),
+                          topLeft: Radius.circular(3),
+                          bottomLeft: Radius.circular(3),
                         ),
                       ),
                     ),
@@ -123,15 +136,18 @@ class FullDayEventWidget extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
-                          vertical: 3,
+                          vertical: 4,
                         ),
                         child: Text(
                           event.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              PlacesType.label(
+                                isBusinessBlock ? event.color : Colors.white,
+                              ).copyWith(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0,
+                              ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

@@ -36,7 +36,9 @@ class TodayRouteState {
     return TodayRouteState(
       tomtomIds: tomtomIds ?? this.tomtomIds,
       touchedOn: touchedOn ?? this.touchedOn,
-      autoClearedFrom: clearAutoCleared ? null : (autoClearedFrom ?? this.autoClearedFrom),
+      autoClearedFrom: clearAutoCleared
+          ? null
+          : (autoClearedFrom ?? this.autoClearedFrom),
     );
   }
 }
@@ -46,12 +48,12 @@ class TodayRouteCubit extends Cubit<TodayRouteState> {
   static const _dateKey = 'today_route_date';
 
   TodayRouteCubit()
-      : super(
-          TodayRouteState(
-            tomtomIds: const [],
-            touchedOn: _dateOnly(DateTime.now()),
-          ),
-        ) {
+    : super(
+        TodayRouteState(
+          tomtomIds: const [],
+          touchedOn: _dateOnly(DateTime.now()),
+        ),
+      ) {
     _hydrate();
   }
 
@@ -71,11 +73,13 @@ class TodayRouteCubit extends Cubit<TodayRouteState> {
       // Overnight reset. Persist the empty state under today's date and
       // surface the prior date so the UI can show its quiet note.
       await _persist(const [], today);
-      emit(TodayRouteState(
-        tomtomIds: const [],
-        touchedOn: today,
-        autoClearedFrom: storedDate,
-      ));
+      emit(
+        TodayRouteState(
+          tomtomIds: const [],
+          touchedOn: today,
+          autoClearedFrom: storedDate,
+        ),
+      );
       return;
     }
 
@@ -89,11 +93,13 @@ class TodayRouteCubit extends Cubit<TodayRouteState> {
     final today = _dateOnly(DateTime.now());
     if (_sameDay(state.touchedOn, today)) return;
     await _persist(const [], today);
-    emit(TodayRouteState(
-      tomtomIds: const [],
-      touchedOn: today,
-      autoClearedFrom: state.touchedOn,
-    ));
+    emit(
+      TodayRouteState(
+        tomtomIds: const [],
+        touchedOn: today,
+        autoClearedFrom: state.touchedOn,
+      ),
+    );
   }
 
   Future<void> add(String tomtomId) async {
@@ -101,11 +107,9 @@ class TodayRouteCubit extends Cubit<TodayRouteState> {
     final next = [...state.tomtomIds, tomtomId];
     final today = _dateOnly(DateTime.now());
     await _persist(next, today);
-    emit(state.copyWith(
-      tomtomIds: next,
-      touchedOn: today,
-      clearAutoCleared: true,
-    ));
+    emit(
+      state.copyWith(tomtomIds: next, touchedOn: today, clearAutoCleared: true),
+    );
   }
 
   Future<void> remove(String tomtomId) async {
@@ -113,11 +117,9 @@ class TodayRouteCubit extends Cubit<TodayRouteState> {
     final next = state.tomtomIds.where((id) => id != tomtomId).toList();
     final today = _dateOnly(DateTime.now());
     await _persist(next, today);
-    emit(state.copyWith(
-      tomtomIds: next,
-      touchedOn: today,
-      clearAutoCleared: true,
-    ));
+    emit(
+      state.copyWith(tomtomIds: next, touchedOn: today, clearAutoCleared: true),
+    );
   }
 
   Future<void> reorder(int oldIndex, int newIndex) async {
@@ -128,11 +130,9 @@ class TodayRouteCubit extends Cubit<TodayRouteState> {
     next.insert(adjusted, item);
     final today = _dateOnly(DateTime.now());
     await _persist(next, today);
-    emit(state.copyWith(
-      tomtomIds: next,
-      touchedOn: today,
-      clearAutoCleared: true,
-    ));
+    emit(
+      state.copyWith(tomtomIds: next, touchedOn: today, clearAutoCleared: true),
+    );
   }
 
   Future<void> dismissResetNote() async {

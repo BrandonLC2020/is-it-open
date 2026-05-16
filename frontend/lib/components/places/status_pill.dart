@@ -49,7 +49,9 @@ class StatusPill extends StatelessWidget {
     final bg = theme.statusColor(status.kind);
     final fg = theme.statusOnContrast(status.kind);
     final leading = _leadingWord(status.kind);
-    final supporting = status.supporting.isEmpty ? '' : ' · ${status.supporting}';
+    final supporting = status.supporting.isEmpty
+        ? ''
+        : ' · ${status.supporting}';
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
@@ -85,9 +87,9 @@ class StatusPill extends StatelessWidget {
   }
 
   static String _leadingWord(PlaceStatusKind kind) => switch (kind) {
-        PlaceStatusKind.open => 'Open',
-        PlaceStatusKind.closingSoon => 'Closes',
-        PlaceStatusKind.closed => 'Closed',
-        PlaceStatusKind.unknown => '',
-      };
+    PlaceStatusKind.open => 'Open',
+    PlaceStatusKind.closingSoon => 'Closes',
+    PlaceStatusKind.closed => 'Closed',
+    PlaceStatusKind.unknown => '',
+  };
 }

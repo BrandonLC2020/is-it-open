@@ -10,11 +10,7 @@ import '../../utils/places_theme.dart';
 // detail. Stays a thumbnail on purpose: a full-bleed map at the top of detail
 // would push us into the "Generic Maps clone" anti-reference (PRODUCT.md).
 class AddressMapThumb extends StatelessWidget {
-  const AddressMapThumb({
-    super.key,
-    required this.location,
-    this.size = 84,
-  });
+  const AddressMapThumb({super.key, required this.location, this.size = 84});
 
   final LatLng location;
   final double size;

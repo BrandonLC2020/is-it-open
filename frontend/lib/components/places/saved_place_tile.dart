@@ -67,7 +67,9 @@ class SavedPlaceTile extends StatelessWidget {
               const SizedBox(height: PlacesSpacing.sm),
               Text(
                 address,
-                style: PlacesType.bodySmall(theme.inkMuted).copyWith(fontSize: 12),
+                style: PlacesType.bodySmall(
+                  theme.inkMuted,
+                ).copyWith(fontSize: 12),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -77,10 +79,7 @@ class SavedPlaceTile extends StatelessWidget {
                 children: [
                   Expanded(child: StatusPill(status: status)),
                   const SizedBox(width: PlacesSpacing.xs),
-                  _TodayIconToggle(
-                    isOnToday: isOnToday,
-                    onTap: onToggleToday,
-                  ),
+                  _TodayIconToggle(isOnToday: isOnToday, onTap: onToggleToday),
                 ],
               ),
             ],
@@ -107,7 +106,9 @@ class _TodayIconToggle extends StatelessWidget {
         width: 32,
         height: 32,
         child: Material(
-          color: isOnToday ? theme.anchor.withValues(alpha: 0.12) : Colors.transparent,
+          color: isOnToday
+              ? theme.anchor.withValues(alpha: 0.12)
+              : Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(PlacesRadius.pill),
             side: isOnToday

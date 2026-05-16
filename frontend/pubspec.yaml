@@ -48,6 +48,7 @@ dependencies:
   file_picker: ^8.0.0
   rrule: ^0.2.18
   timezone: ^0.9.4
+  google_fonts: ^8.1.0
 
 dev_dependencies:
   flutter_test:

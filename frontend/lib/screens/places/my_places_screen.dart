@@ -89,7 +89,9 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
               color: theme.inkMuted,
             ),
             onPressed: () => setState(() {
-              _viewMode = _viewMode == _ViewMode.list ? _ViewMode.grid : _ViewMode.list;
+              _viewMode = _viewMode == _ViewMode.list
+                  ? _ViewMode.grid
+                  : _ViewMode.list;
             }),
           ),
           IconButton(
@@ -151,11 +153,13 @@ class _PlacesBody extends StatelessWidget {
     final use24h = context.watch<PreferencesCubit>().state.use24HourFormat;
     final now = DateTime.now();
 
-    final filtered = allPlaces.where((p) => switch (filter) {
-          _VisitFilter.all => true,
-          _VisitFilter.wantToVisit => p.isCheckItOut,
-          _VisitFilter.visited => !p.isCheckItOut,
-        });
+    final filtered = allPlaces.where(
+      (p) => switch (filter) {
+        _VisitFilter.all => true,
+        _VisitFilter.wantToVisit => p.isCheckItOut,
+        _VisitFilter.visited => !p.isCheckItOut,
+      },
+    );
 
     // Compute status for each place once (avoids per-row recomputation in lists).
     final enriched = [
@@ -194,12 +198,18 @@ class _PlacesBody extends StatelessWidget {
                 itemCount: group.places.length,
                 itemBuilder: (context, i) {
                   final ep = group.places[i];
-                  return _RowRouter(enriched: ep, onRefresh: onRefresh, isLast: i == group.places.length - 1);
+                  return _RowRouter(
+                    enriched: ep,
+                    onRefresh: onRefresh,
+                    isLast: i == group.places.length - 1,
+                  );
                 },
               )
             else
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: PlacesSpacing.lg),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: PlacesSpacing.lg,
+                ),
                 sliver: SliverGrid(
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: 320,
@@ -207,13 +217,10 @@ class _PlacesBody extends StatelessWidget {
                     crossAxisSpacing: PlacesSpacing.md,
                     mainAxisSpacing: PlacesSpacing.md,
                   ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) {
-                      final ep = group.places[i];
-                      return _TileRouter(enriched: ep, onRefresh: onRefresh);
-                    },
-                    childCount: group.places.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, i) {
+                    final ep = group.places[i];
+                    return _TileRouter(enriched: ep, onRefresh: onRefresh);
+                  }, childCount: group.places.length),
                 ),
               ),
           ],
@@ -244,8 +251,11 @@ class _PlacesBody extends StatelessWidget {
       if (bn == null) return -1;
       return an.compareTo(bn);
     });
-    groups[PlaceStatusKind.closingSoon]!.sort((a, b) =>
-        (a.status.nextChange ?? DateTime.now()).compareTo(b.status.nextChange ?? DateTime.now()));
+    groups[PlaceStatusKind.closingSoon]!.sort(
+      (a, b) => (a.status.nextChange ?? DateTime.now()).compareTo(
+        b.status.nextChange ?? DateTime.now(),
+      ),
+    );
     groups[PlaceStatusKind.closed]!.sort((a, b) {
       final an = a.status.nextChange;
       final bn = b.status.nextChange;
@@ -254,8 +264,9 @@ class _PlacesBody extends StatelessWidget {
       return an.compareTo(bn);
     });
     groups[PlaceStatusKind.unknown]!.sort(
-      (a, b) => (a.savedPlace.customName ?? a.savedPlace.place.name)
-          .compareTo(b.savedPlace.customName ?? b.savedPlace.place.name),
+      (a, b) => (a.savedPlace.customName ?? a.savedPlace.place.name).compareTo(
+        b.savedPlace.customName ?? b.savedPlace.place.name,
+      ),
     );
     return [
       for (final k in [
@@ -269,10 +280,10 @@ class _PlacesBody extends StatelessWidget {
   }
 
   static Map<_VisitFilter, int> _filterCounts(List<SavedPlace> all) => {
-        _VisitFilter.all: all.length,
-        _VisitFilter.wantToVisit: all.where((p) => p.isCheckItOut).length,
-        _VisitFilter.visited: all.where((p) => !p.isCheckItOut).length,
-      };
+    _VisitFilter.all: all.length,
+    _VisitFilter.wantToVisit: all.where((p) => p.isCheckItOut).length,
+    _VisitFilter.visited: all.where((p) => !p.isCheckItOut).length,
+  };
 }
 
 class _EnrichedPlace {
@@ -303,7 +314,11 @@ class _TodayStrip extends StatelessWidget {
         if (route.isEmpty && route.autoClearedFrom == null) {
           return Padding(
             padding: const EdgeInsets.fromLTRB(
-              PlacesSpacing.lg, PlacesSpacing.xl, PlacesSpacing.lg, PlacesSpacing.sm),
+              PlacesSpacing.lg,
+              PlacesSpacing.xl,
+              PlacesSpacing.lg,
+              PlacesSpacing.sm,
+            ),
             child: Row(
               children: [
                 Text("Today's route", style: PlacesType.label(theme.inkMuted)),
@@ -322,16 +337,25 @@ class _TodayStrip extends StatelessWidget {
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(
-            0, PlacesSpacing.lg, 0, PlacesSpacing.sm),
+            0,
+            PlacesSpacing.lg,
+            0,
+            PlacesSpacing.sm,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (route.autoClearedFrom != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
-                    PlacesSpacing.lg, 0, PlacesSpacing.lg, PlacesSpacing.sm),
+                    PlacesSpacing.lg,
+                    0,
+                    PlacesSpacing.lg,
+                    PlacesSpacing.sm,
+                  ),
                   child: GestureDetector(
-                    onTap: () => context.read<TodayRouteCubit>().dismissResetNote(),
+                    onTap: () =>
+                        context.read<TodayRouteCubit>().dismissResetNote(),
                     child: Text(
                       "Today's route reset for ${_friendlyDate(DateTime.now())}.",
                       style: PlacesType.bodySmall(theme.inkMuted),
@@ -340,7 +364,11 @@ class _TodayStrip extends StatelessWidget {
                 ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  PlacesSpacing.lg, 0, PlacesSpacing.lg, PlacesSpacing.sm),
+                  PlacesSpacing.lg,
+                  0,
+                  PlacesSpacing.lg,
+                  PlacesSpacing.sm,
+                ),
                 child: Text(
                   "Today's route",
                   style: PlacesType.label(theme.inkMuted),
@@ -351,9 +379,12 @@ class _TodayStrip extends StatelessWidget {
                   height: 96,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: PlacesSpacing.lg),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: PlacesSpacing.lg,
+                    ),
                     itemCount: route.tomtomIds.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: PlacesSpacing.sm),
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(width: PlacesSpacing.sm),
                     itemBuilder: (context, i) =>
                         _TodayStopCard(tomtomId: route.tomtomIds[i], index: i),
                   ),
@@ -366,8 +397,20 @@ class _TodayStrip extends StatelessWidget {
   }
 
   static String _friendlyDate(DateTime dt) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return '${days[dt.weekday - 1]}, ${months[dt.month - 1]} ${dt.day}';
   }
@@ -389,9 +432,9 @@ class _TodayStopCard extends StatelessWidget {
       builder: (context, snap) {
         final places = snap.data ?? const <SavedPlace>[];
         final match = places.cast<SavedPlace?>().firstWhere(
-              (p) => p?.place.tomtomId == tomtomId,
-              orElse: () => null,
-            );
+          (p) => p?.place.tomtomId == tomtomId,
+          orElse: () => null,
+        );
         final use24 = context.watch<PreferencesCubit>().state.use24HourFormat;
         final status = match == null
             ? const PlaceStatus(kind: PlaceStatusKind.unknown, supporting: '')
@@ -442,7 +485,9 @@ class _TodayStopCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         name,
-                        style: PlacesType.title(theme.ink).copyWith(fontSize: 14),
+                        style: PlacesType.title(
+                          theme.ink,
+                        ).copyWith(fontSize: 14),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -467,7 +512,9 @@ class _TodayStopCard extends StatelessWidget {
       context: context,
       backgroundColor: theme.paperRaised,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(PlacesRadius.lg)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(PlacesRadius.lg),
+        ),
       ),
       builder: (ctx) => SafeArea(
         child: Column(
@@ -475,27 +522,38 @@ class _TodayStopCard extends StatelessWidget {
           children: [
             const SizedBox(height: PlacesSpacing.sm),
             Container(
-              width: 36, height: 4,
+              width: 36,
+              height: 4,
               decoration: BoxDecoration(
-                color: theme.ash, borderRadius: BorderRadius.circular(2),
+                color: theme.ash,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
             if (index > 0)
               ListTile(
                 leading: const Icon(Icons.arrow_back_rounded),
                 title: const Text('Move earlier'),
-                onTap: () { cubit.reorder(index, index - 1); Navigator.pop(ctx); },
+                onTap: () {
+                  cubit.reorder(index, index - 1);
+                  Navigator.pop(ctx);
+                },
               ),
             if (index < total - 1)
               ListTile(
                 leading: const Icon(Icons.arrow_forward_rounded),
                 title: const Text('Move later'),
-                onTap: () { cubit.reorder(index, index + 2); Navigator.pop(ctx); },
+                onTap: () {
+                  cubit.reorder(index, index + 2);
+                  Navigator.pop(ctx);
+                },
               ),
             ListTile(
               leading: Icon(Icons.close_rounded, color: theme.closingColor),
               title: const Text('Remove from today'),
-              onTap: () { cubit.remove(tomtomId); Navigator.pop(ctx); },
+              onTap: () {
+                cubit.remove(tomtomId);
+                Navigator.pop(ctx);
+              },
             ),
             const SizedBox(height: PlacesSpacing.sm),
           ],
@@ -510,7 +568,11 @@ class _TodayStopCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────
 
 class _FilterChips extends StatelessWidget {
-  const _FilterChips({required this.filter, required this.counts, required this.onChanged});
+  const _FilterChips({
+    required this.filter,
+    required this.counts,
+    required this.onChanged,
+  });
 
   final _VisitFilter filter;
   final Map<_VisitFilter, int> counts;
@@ -520,7 +582,11 @@ class _FilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        PlacesSpacing.lg, PlacesSpacing.md, PlacesSpacing.lg, PlacesSpacing.md),
+        PlacesSpacing.lg,
+        PlacesSpacing.md,
+        PlacesSpacing.lg,
+        PlacesSpacing.md,
+      ),
       child: Wrap(
         spacing: PlacesSpacing.sm,
         children: [
@@ -541,14 +607,13 @@ class _FilterChips extends StatelessWidget {
       borderRadius: BorderRadius.circular(PlacesRadius.pill),
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: PlacesSpacing.md, vertical: PlacesSpacing.sm),
+          horizontal: PlacesSpacing.md,
+          vertical: PlacesSpacing.sm,
+        ),
         decoration: BoxDecoration(
           color: active ? theme.ink : Colors.transparent,
           borderRadius: BorderRadius.circular(PlacesRadius.pill),
-          border: Border.all(
-            color: active ? theme.ink : theme.ash,
-            width: 1,
-          ),
+          border: Border.all(color: active ? theme.ink : theme.ash, width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -593,11 +658,16 @@ class _SectionHeader extends StatelessWidget {
     final theme = context.places;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        PlacesSpacing.lg, PlacesSpacing.lg, PlacesSpacing.lg, PlacesSpacing.sm),
+        PlacesSpacing.lg,
+        PlacesSpacing.lg,
+        PlacesSpacing.lg,
+        PlacesSpacing.sm,
+      ),
       child: Row(
         children: [
           Container(
-            width: 8, height: 8,
+            width: 8,
+            height: 8,
             decoration: BoxDecoration(
               color: theme.statusColor(group.kind),
               shape: BoxShape.circle,
@@ -606,10 +676,9 @@ class _SectionHeader extends StatelessWidget {
           const SizedBox(width: PlacesSpacing.sm),
           Text(
             _labelFor(group.kind),
-            style: PlacesType.label(theme.ink).copyWith(
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
+            style: PlacesType.label(
+              theme.ink,
+            ).copyWith(fontWeight: FontWeight.w600, letterSpacing: 0.5),
           ),
           const SizedBox(width: PlacesSpacing.sm),
           Text(
@@ -622,11 +691,11 @@ class _SectionHeader extends StatelessWidget {
   }
 
   static String _labelFor(PlaceStatusKind k) => switch (k) {
-        PlaceStatusKind.open => 'OPEN NOW',
-        PlaceStatusKind.closingSoon => 'CLOSES SOON',
-        PlaceStatusKind.closed => 'CLOSED',
-        PlaceStatusKind.unknown => 'HOURS UNKNOWN',
-      };
+    PlaceStatusKind.open => 'OPEN NOW',
+    PlaceStatusKind.closingSoon => 'CLOSES SOON',
+    PlaceStatusKind.closed => 'CLOSED',
+    PlaceStatusKind.unknown => 'HOURS UNKNOWN',
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -634,7 +703,11 @@ class _SectionHeader extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────
 
 class _RowRouter extends StatelessWidget {
-  const _RowRouter({required this.enriched, required this.onRefresh, required this.isLast});
+  const _RowRouter({
+    required this.enriched,
+    required this.onRefresh,
+    required this.isLast,
+  });
 
   final _EnrichedPlace enriched;
   final Future<void> Function() onRefresh;
@@ -689,7 +762,11 @@ class _TileRouter extends StatelessWidget {
   }
 }
 
-void _toggleToday(BuildContext context, _EnrichedPlace enriched, bool currentlyOn) {
+void _toggleToday(
+  BuildContext context,
+  _EnrichedPlace enriched,
+  bool currentlyOn,
+) {
   final cubit = context.read<TodayRouteCubit>();
   final id = enriched.savedPlace.place.tomtomId;
   if (currentlyOn) {
@@ -699,7 +776,11 @@ void _toggleToday(BuildContext context, _EnrichedPlace enriched, bool currentlyO
   }
 }
 
-void _openDetail(BuildContext context, _EnrichedPlace enriched, Future<void> Function() onRefresh) {
+void _openDetail(
+  BuildContext context,
+  _EnrichedPlace enriched,
+  Future<void> Function() onRefresh,
+) {
   Navigator.push(
     context,
     MaterialPageRoute(
@@ -721,7 +802,9 @@ void _openActionSheet(
     context: context,
     backgroundColor: theme.paperRaised,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(PlacesRadius.lg)),
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(PlacesRadius.lg),
+      ),
     ),
     builder: (ctx) => SafeArea(
       child: Column(
@@ -731,15 +814,21 @@ void _openActionSheet(
           const SizedBox(height: PlacesSpacing.sm),
           Center(
             child: Container(
-              width: 36, height: 4,
+              width: 36,
+              height: 4,
               decoration: BoxDecoration(
-                color: theme.ash, borderRadius: BorderRadius.circular(2),
+                color: theme.ash,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              PlacesSpacing.lg, PlacesSpacing.md, PlacesSpacing.lg, PlacesSpacing.sm),
+              PlacesSpacing.lg,
+              PlacesSpacing.md,
+              PlacesSpacing.lg,
+              PlacesSpacing.sm,
+            ),
             child: Text(
               sp.customName ?? sp.place.name,
               style: PlacesType.title(theme.ink),
@@ -763,10 +852,14 @@ void _openActionSheet(
           ),
           ListTile(
             leading: Icon(
-              sp.isCheckItOut ? Icons.check_circle_outline : Icons.visibility_off_outlined,
+              sp.isCheckItOut
+                  ? Icons.check_circle_outline
+                  : Icons.visibility_off_outlined,
               color: theme.inkMuted,
             ),
-            title: Text(sp.isCheckItOut ? 'Mark as visited' : 'Move to want to visit'),
+            title: Text(
+              sp.isCheckItOut ? 'Mark as visited' : 'Move to want to visit',
+            ),
             onTap: () async {
               Navigator.pop(ctx);
               try {
@@ -821,11 +914,20 @@ class _SkeletonList extends StatelessWidget {
       separatorBuilder: (_, _) => const SizedBox(height: 0),
       itemBuilder: (_, _) => Padding(
         padding: const EdgeInsets.fromLTRB(
-          PlacesSpacing.lg, PlacesSpacing.md, PlacesSpacing.lg, PlacesSpacing.md),
+          PlacesSpacing.lg,
+          PlacesSpacing.md,
+          PlacesSpacing.lg,
+          PlacesSpacing.md,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ShimmerBox(width: 28, height: 28, radius: 14, color: theme.ashSoft),
+            _ShimmerBox(
+              width: 28,
+              height: 28,
+              radius: 14,
+              color: theme.ashSoft,
+            ),
             const SizedBox(width: PlacesSpacing.md),
             Expanded(
               child: Column(
@@ -835,7 +937,12 @@ class _SkeletonList extends StatelessWidget {
                   const SizedBox(height: PlacesSpacing.sm),
                   _ShimmerBox(width: 220, height: 12, color: theme.ashSoft),
                   const SizedBox(height: PlacesSpacing.sm),
-                  _ShimmerBox(width: 110, height: 22, radius: 11, color: theme.ashSoft),
+                  _ShimmerBox(
+                    width: 110,
+                    height: 22,
+                    radius: 11,
+                    color: theme.ashSoft,
+                  ),
                 ],
               ),
             ),
@@ -859,13 +966,13 @@ class _ShimmerBox extends StatelessWidget {
   final double radius;
   @override
   Widget build(BuildContext context) => Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(radius),
-        ),
-      );
+    width: width,
+    height: height,
+    decoration: BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(radius),
+    ),
+  );
 }
 
 class _EmptyState extends StatelessWidget {
@@ -965,7 +1072,11 @@ class _ErrorState extends StatelessWidget {
 }
 
 class _PrimaryAction extends StatelessWidget {
-  const _PrimaryAction({required this.label, required this.icon, required this.onPressed});
+  const _PrimaryAction({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
   final String label;
   final IconData icon;
   final VoidCallback onPressed;
@@ -980,7 +1091,9 @@ class _PrimaryAction extends StatelessWidget {
         onTap: onPressed,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: PlacesSpacing.lg, vertical: PlacesSpacing.md),
+            horizontal: PlacesSpacing.lg,
+            vertical: PlacesSpacing.md,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1003,7 +1116,11 @@ class _PrimaryAction extends StatelessWidget {
 }
 
 class _SecondaryAction extends StatelessWidget {
-  const _SecondaryAction({required this.label, required this.icon, required this.onPressed});
+  const _SecondaryAction({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
   final String label;
   final IconData icon;
   final VoidCallback onPressed;
@@ -1015,7 +1132,9 @@ class _SecondaryAction extends StatelessWidget {
       borderRadius: BorderRadius.circular(PlacesRadius.md),
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: PlacesSpacing.lg, vertical: PlacesSpacing.md),
+          horizontal: PlacesSpacing.lg,
+          vertical: PlacesSpacing.md,
+        ),
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(PlacesRadius.md),

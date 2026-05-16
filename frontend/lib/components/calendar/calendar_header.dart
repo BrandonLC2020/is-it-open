@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../bloc/calendar/calendar_ui_state.dart';
 import '../../bloc/calendar/calendar_ui_cubit.dart';
+import '../../utils/places_theme.dart';
 
 class CalendarHeaderWidget extends StatelessWidget {
   final CalendarViewType currentView;
@@ -11,18 +12,58 @@ class CalendarHeaderWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.places;
     return SegmentedButton<CalendarViewType>(
-      segments: const [
-        ButtonSegment(value: CalendarViewType.singleDay, label: Text('1 Day')),
-        ButtonSegment(value: CalendarViewType.threeDay, label: Text('3 Days')),
-        ButtonSegment(value: CalendarViewType.week, label: Text('Week')),
+      segments: [
+        ButtonSegment(
+          value: CalendarViewType.singleDay,
+          label: Text(
+            '1 Day',
+            style: PlacesType.label(
+              theme.ink,
+            ).copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+        ButtonSegment(
+          value: CalendarViewType.threeDay,
+          label: Text(
+            '3 Days',
+            style: PlacesType.label(
+              theme.ink,
+            ).copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+        ButtonSegment(
+          value: CalendarViewType.week,
+          label: Text(
+            'Week',
+            style: PlacesType.label(
+              theme.ink,
+            ).copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
       ],
       selected: <CalendarViewType>{currentView},
       onSelectionChanged: (Set<CalendarViewType> selection) {
         context.read<CalendarUiCubit>().changeViewType(selection.first);
       },
       showSelectedIcon: false,
-      style: const ButtonStyle(visualDensity: VisualDensity.compact),
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
+            return theme.anchor.withValues(alpha: 0.1);
+          }
+          return Colors.transparent;
+        }),
+        foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+          if (states.contains(WidgetState.selected)) {
+            return theme.anchor;
+          }
+          return theme.ink;
+        }),
+        side: WidgetStateProperty.all(BorderSide(color: theme.ashSoft)),
+      ),
     );
   }
 }

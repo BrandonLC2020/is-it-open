@@ -39,9 +39,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     try {
       final bookmarks = await context.read<ApiService>().getBookmarks();
       final match = bookmarks.cast<SavedPlace?>().firstWhere(
-            (b) => b?.place.tomtomId == widget.place.tomtomId,
-            orElse: () => null,
-          );
+        (b) => b?.place.tomtomId == widget.place.tomtomId,
+        orElse: () => null,
+      );
       if (mounted) {
         setState(() {
           _saved = match;
@@ -130,7 +130,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         top: false,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
-            PlacesSpacing.lg, 0, PlacesSpacing.lg, 120),
+            PlacesSpacing.lg,
+            0,
+            PlacesSpacing.lg,
+            120,
+          ),
           children: [
             const SizedBox(height: PlacesSpacing.sm),
             _Hero(place: widget.place, savedPlace: _saved, status: status),
@@ -138,17 +142,18 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             _AddressBlock(place: widget.place),
             if (widget.place.hours.isNotEmpty) ...[
               const SizedBox(height: PlacesSpacing.xxl),
-              _HoursTable(hours: widget.place.hours, today: now.weekday - 1, use24h: use24h),
+              _HoursTable(
+                hours: widget.place.hours,
+                today: now.weekday - 1,
+                use24h: use24h,
+              ),
             ] else if (_isCustomPlace) ...[
               const SizedBox(height: PlacesSpacing.xxl),
               _HoursPlaceholder(onAddHours: _showHoursEditor),
             ],
             if (_saved != null) ...[
               const SizedBox(height: PlacesSpacing.xxl),
-              _PlanVisitEntry(
-                saved: _saved!,
-                onOpen: _openPlanVisit,
-              ),
+              _PlanVisitEntry(saved: _saved!, onOpen: _openPlanVisit),
             ],
             if (widget.place.phone != null || widget.place.website != null) ...[
               const SizedBox(height: PlacesSpacing.xxl),
@@ -156,10 +161,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             ],
             if (_saved != null && _isCustomPlace) ...[
               const SizedBox(height: PlacesSpacing.xxl),
-              _CustomPlaceAffordances(
-                saved: _saved!,
-                onChanged: _hydrateSaved,
-              ),
+              _CustomPlaceAffordances(saved: _saved!, onChanged: _hydrateSaved),
             ],
           ],
         ),
@@ -167,7 +169,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
-            PlacesSpacing.lg, PlacesSpacing.sm, PlacesSpacing.lg, PlacesSpacing.md),
+            PlacesSpacing.lg,
+            PlacesSpacing.sm,
+            PlacesSpacing.lg,
+            PlacesSpacing.md,
+          ),
           child: BlocBuilder<TodayRouteCubit, TodayRouteState>(
             builder: (context, route) {
               final isOn = route.contains(widget.place.tomtomId);
@@ -210,7 +216,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
 // ─────────────────────────────────────────────────────────────────────
 
 class _Hero extends StatelessWidget {
-  const _Hero({required this.place, required this.savedPlace, required this.status});
+  const _Hero({
+    required this.place,
+    required this.savedPlace,
+    required this.status,
+  });
 
   final Place place;
   final SavedPlace? savedPlace;
@@ -285,7 +295,11 @@ class _AddressBlock extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────
 
 class _HoursTable extends StatelessWidget {
-  const _HoursTable({required this.hours, required this.today, required this.use24h});
+  const _HoursTable({
+    required this.hours,
+    required this.today,
+    required this.use24h,
+  });
 
   final List<BusinessHours> hours;
   final int today; // 0..6 Mon..Sun
@@ -337,7 +351,9 @@ class _HoursRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(PlacesRadius.sm),
       ),
       padding: const EdgeInsets.symmetric(
-        horizontal: PlacesSpacing.sm, vertical: PlacesSpacing.sm),
+        horizontal: PlacesSpacing.sm,
+        vertical: PlacesSpacing.sm,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -349,7 +365,8 @@ class _HoursRow extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(right: 6),
                     child: Container(
-                      width: 6, height: 6,
+                      width: 6,
+                      height: 6,
                       decoration: BoxDecoration(
                         color: theme.anchor,
                         shape: BoxShape.circle,
@@ -359,7 +376,9 @@ class _HoursRow extends StatelessWidget {
                 Text(
                   label,
                   style: PlacesType.body(isToday ? theme.ink : theme.inkMuted)
-                      .copyWith(fontWeight: isToday ? FontWeight.w600 : FontWeight.w400),
+                      .copyWith(
+                        fontWeight: isToday ? FontWeight.w600 : FontWeight.w400,
+                      ),
                 ),
               ],
             ),
@@ -375,7 +394,9 @@ class _HoursRow extends StatelessWidget {
                         Text(
                           '${_fmt(b.openTime.hour, b.openTime.minute, use24h)} – '
                           '${_fmt(b.closeTime.hour, b.closeTime.minute, use24h)}',
-                          style: PlacesType.body(isToday ? theme.ink : theme.inkMuted),
+                          style: PlacesType.body(
+                            isToday ? theme.ink : theme.inkMuted,
+                          ),
                         ),
                     ],
                   ),
@@ -451,7 +472,9 @@ class _PlanVisitEntry extends StatelessWidget {
               if (hasValue)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: PlacesSpacing.sm, vertical: 4),
+                    horizontal: PlacesSpacing.sm,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.anchor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(PlacesRadius.pill),
@@ -560,9 +583,7 @@ class _ContactRow extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: theme.inkMuted),
           const SizedBox(width: PlacesSpacing.md),
-          Expanded(
-            child: Text(text, style: PlacesType.body(theme.ink)),
-          ),
+          Expanded(child: Text(text, style: PlacesType.body(theme.ink))),
         ],
       ),
     );
@@ -580,7 +601,8 @@ class _CustomPlaceAffordances extends StatefulWidget {
   final VoidCallback onChanged;
 
   @override
-  State<_CustomPlaceAffordances> createState() => _CustomPlaceAffordancesState();
+  State<_CustomPlaceAffordances> createState() =>
+      _CustomPlaceAffordancesState();
 }
 
 class _CustomPlaceAffordancesState extends State<_CustomPlaceAffordances> {
@@ -605,11 +627,11 @@ class _CustomPlaceAffordancesState extends State<_CustomPlaceAffordances> {
     setState(() => _saving = true);
     try {
       await context.read<ApiService>().updateBookmarkGraphic(
-            widget.saved.place.tomtomId,
-            widget.saved.icon,
-            widget.saved.color,
-            customName: _label.text.trim().isEmpty ? null : _label.text.trim(),
-          );
+        widget.saved.place.tomtomId,
+        widget.saved.icon,
+        widget.saved.color,
+        customName: _label.text.trim().isEmpty ? null : _label.text.trim(),
+      );
       widget.onChanged();
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -683,7 +705,9 @@ class _StickyCTA extends StatelessWidget {
     final theme = context.places;
     final bg = isOnToday ? theme.paperRaised : theme.anchor;
     final fg = isOnToday ? theme.ink : theme.anchorOnContrast;
-    final border = isOnToday ? Border.all(color: theme.anchor, width: 1.5) : null;
+    final border = isOnToday
+        ? Border.all(color: theme.anchor, width: 1.5)
+        : null;
 
     return Material(
       color: Colors.transparent,
@@ -701,7 +725,8 @@ class _StickyCTA extends StatelessWidget {
             child: Center(
               child: loading
                   ? SizedBox(
-                      width: 22, height: 22,
+                      width: 22,
+                      height: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation(fg),
@@ -716,7 +741,9 @@ class _StickyCTA extends StatelessWidget {
                         ),
                         const SizedBox(width: PlacesSpacing.sm),
                         Text(
-                          isOnToday ? "On today's route" : "Add to today's route",
+                          isOnToday
+                              ? "On today's route"
+                              : "Add to today's route",
                           style: TextStyle(
                             color: fg,
                             fontSize: 16,
@@ -752,7 +779,9 @@ class _HoursEditorSheet extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: theme.paperRaised,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(PlacesRadius.lg)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(PlacesRadius.lg),
+          ),
         ),
         padding: const EdgeInsets.all(PlacesSpacing.lg),
         child: SafeArea(
@@ -763,9 +792,11 @@ class _HoursEditorSheet extends StatelessWidget {
             children: [
               Center(
                 child: Container(
-                  width: 36, height: 4,
+                  width: 36,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: theme.ash, borderRadius: BorderRadius.circular(2),
+                    color: theme.ash,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),

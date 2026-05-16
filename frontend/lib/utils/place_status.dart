@@ -101,7 +101,11 @@ class PlaceStatusCalculator {
     );
   }
 
-  static _Span? _spanOnDay(BusinessHours h, int dayOfWeek, {required bool prevDay}) {
+  static _Span? _spanOnDay(
+    BusinessHours h,
+    int dayOfWeek, {
+    required bool prevDay,
+  }) {
     if (h.dayOfWeek != dayOfWeek) return null;
     final start = h.openTime.hour * 60 + h.openTime.minute;
     var end = h.closeTime.hour * 60 + h.closeTime.minute;
@@ -118,16 +122,27 @@ class PlaceStatusCalculator {
     return end <= start;
   }
 
-  static DateTime? _nextOpening(List<BusinessHours> hours, {required DateTime now}) {
+  static DateTime? _nextOpening(
+    List<BusinessHours> hours, {
+    required DateTime now,
+  }) {
     for (var offset = 0; offset < 7; offset++) {
       final dt = now.add(Duration(days: offset));
       final dow = _modelDayOfWeek(dt);
       final dayBlocks = hours.where((h) => h.dayOfWeek == dow).toList()
-        ..sort((a, b) => _minutesOf(a.openTime).compareTo(_minutesOf(b.openTime)));
+        ..sort(
+          (a, b) => _minutesOf(a.openTime).compareTo(_minutesOf(b.openTime)),
+        );
       for (final h in dayBlocks) {
         final openMin = _minutesOf(h.openTime);
         if (offset == 0 && openMin <= now.hour * 60 + now.minute) continue;
-        return DateTime(dt.year, dt.month, dt.day, h.openTime.hour, h.openTime.minute);
+        return DateTime(
+          dt.year,
+          dt.month,
+          dt.day,
+          h.openTime.hour,
+          h.openTime.minute,
+        );
       }
     }
     return null;
@@ -171,15 +186,8 @@ class PlaceStatusCalculator {
     return '$clock ${_shortDay(when.weekday)}';
   }
 
-  static String _shortDay(int weekday) => const [
-        'Mon',
-        'Tue',
-        'Wed',
-        'Thu',
-        'Fri',
-        'Sat',
-        'Sun',
-      ][weekday - 1];
+  static String _shortDay(int weekday) =>
+      const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][weekday - 1];
 }
 
 class _Span {

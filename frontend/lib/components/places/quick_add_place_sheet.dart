@@ -79,7 +79,8 @@ class _QuickAddPlaceSheetState extends State<QuickAddPlaceSheet> {
               children: [
                 Center(
                   child: Container(
-                    width: 36, height: 4,
+                    width: 36,
+                    height: 4,
                     decoration: BoxDecoration(
                       color: theme.ash,
                       borderRadius: BorderRadius.circular(2),
@@ -98,8 +99,9 @@ class _QuickAddPlaceSheetState extends State<QuickAddPlaceSheet> {
                   controller: _name,
                   label: 'Name',
                   hint: 'Dad\'s house, the trailhead, etc.',
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Give the place a name.' : null,
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Give the place a name.'
+                      : null,
                   autofocus: true,
                 ),
                 const SizedBox(height: PlacesSpacing.md),
@@ -125,11 +127,13 @@ class _QuickAddPlaceSheetState extends State<QuickAddPlaceSheet> {
                             child: Center(
                               child: _submitting
                                   ? SizedBox(
-                                      width: 20, height: 20,
+                                      width: 20,
+                                      height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation(theme.anchorOnContrast),
+                                        valueColor: AlwaysStoppedAnimation(
+                                          theme.anchorOnContrast,
+                                        ),
                                       ),
                                     )
                                   : Text(
@@ -148,7 +152,9 @@ class _QuickAddPlaceSheetState extends State<QuickAddPlaceSheet> {
                     const SizedBox(width: PlacesSpacing.sm),
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(foregroundColor: theme.inkMuted),
+                      style: TextButton.styleFrom(
+                        foregroundColor: theme.inkMuted,
+                      ),
                       child: const Text('Cancel'),
                     ),
                   ],

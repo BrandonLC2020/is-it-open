@@ -51,9 +51,7 @@ class MyApp extends StatelessWidget {
           BlocProvider<PreferencesCubit>(
             create: (context) => PreferencesCubit(),
           ),
-          BlocProvider<TodayRouteCubit>(
-            create: (context) => TodayRouteCubit(),
-          ),
+          BlocProvider<TodayRouteCubit>(create: (context) => TodayRouteCubit()),
         ],
         child: BlocListener<AuthBloc, AuthState>(
           listenWhen: (previous, current) {
