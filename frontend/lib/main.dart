@@ -6,6 +6,7 @@ import 'screens/auth/login_screen.dart';
 import 'bloc/auth/auth_bloc.dart';
 import 'bloc/theme/theme_cubit.dart';
 import 'bloc/preferences/preferences_cubit.dart';
+import 'bloc/today/today_cubit.dart';
 import 'bloc/calendar/calendar_data_bloc.dart';
 import 'bloc/calendar/calendar_data_event.dart';
 import 'core/env_config.dart';
@@ -49,6 +50,9 @@ class MyApp extends StatelessWidget {
           BlocProvider<ThemeCubit>(create: (context) => ThemeCubit()),
           BlocProvider<PreferencesCubit>(
             create: (context) => PreferencesCubit(),
+          ),
+          BlocProvider<TodayRouteCubit>(
+            create: (context) => TodayRouteCubit(),
           ),
         ],
         child: BlocListener<AuthBloc, AuthState>(

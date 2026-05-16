@@ -1,1714 +1,794 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:calendar_view/calendar_view.dart';
-import 'dart:async';
-import 'package:flutter_map/flutter_map.dart';
+
+import '../../bloc/preferences/preferences_cubit.dart';
+import '../../bloc/today/today_cubit.dart';
+import '../../components/places/address_map_thumb.dart';
+import '../../components/places/status_pill.dart';
+import '../../models/hours.dart';
 import '../../models/place.dart';
 import '../../models/saved_place.dart';
 import '../../services/api_service.dart';
-import '../../bloc/preferences/preferences_cubit.dart';
-import '../../bloc/calendar/calendar_data_bloc.dart';
-import '../../bloc/calendar/calendar_data_state.dart';
-import 'package:intl/intl.dart';
-import 'dart:math' as math;
+import '../../utils/graphics_helper.dart';
+import '../../utils/place_status.dart';
+import '../../utils/places_theme.dart';
+import 'plan_visit_screen.dart';
 
 class PlaceDetailScreen extends StatefulWidget {
-  final Place place;
-
   const PlaceDetailScreen({super.key, required this.place});
+
+  final Place place;
 
   @override
   State<PlaceDetailScreen> createState() => _PlaceDetailScreenState();
 }
 
-enum CalendarViewType { singleDay, threeDay, week }
-
 class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
-  CalendarViewType _currentView = CalendarViewType.week;
-  DateTime _baseDate = DateTime.now();
-  SavedPlace? _savedPlace;
-  bool _isLoadingSavedPlace = true;
-  String? _selectedIcon;
-  String? _selectedColor;
-  bool _isEditingGraphic = false;
-  final TextEditingController _labelController = TextEditingController();
-  DateTime? _plannedVisitTime;
-  double _dragAccumulator = 0.0;
-  bool _isCalendarExpanded = false;
-  bool _isCalendarMinimized = false;
+  SavedPlace? _saved;
+  bool _loadingSaved = true;
 
-  final List<String> _suggestedLabels = [
-    'Gym',
-    'Pharmacy',
-    'Grocery',
-    'Coffee',
-    'Work',
-    'Home',
-    'Restaurant',
-  ];
-
-  final Map<String, IconData> _availableIcons = {
-    'restaurant': Icons.restaurant,
-    'local_cafe': Icons.local_cafe,
-    'local_bar': Icons.local_bar,
-    'store': Icons.store,
-    'shopping_cart': Icons.shopping_cart,
-    'fitness_center': Icons.fitness_center,
-    'local_hospital': Icons.local_hospital,
-    'park': Icons.park,
-    'star': Icons.star,
-    'home': Icons.home,
-    'work': Icons.work,
-  };
-
-  final List<Color> _availableColors = [
-    Colors.blue,
-    Colors.indigo,
-    Colors.deepPurple,
-    Colors.purple,
-    Colors.pink,
-    Colors.red,
-    Colors.deepOrange,
-    Colors.orange,
-    Colors.amber,
-    Colors.yellow,
-    Colors.lime,
-    Colors.lightGreen,
-    Colors.green,
-    Colors.teal,
-    Colors.cyan,
-    Colors.blueGrey,
-  ];
+  bool get _isCustomPlace => widget.place.tomtomId.startsWith('custom_');
 
   @override
   void initState() {
     super.initState();
-    _checkSavedStatus();
+    _hydrateSaved();
   }
 
-  @override
-  void dispose() {
-    _labelController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _checkSavedStatus() async {
+  Future<void> _hydrateSaved() async {
     try {
-      final apiService = context.read<ApiService>();
-      final bookmarks = await apiService.getBookmarks();
-      final saved = bookmarks.cast<SavedPlace?>().firstWhere(
-        (b) => b?.place.tomtomId == widget.place.tomtomId,
-        orElse: () => null,
-      );
+      final bookmarks = await context.read<ApiService>().getBookmarks();
+      final match = bookmarks.cast<SavedPlace?>().firstWhere(
+            (b) => b?.place.tomtomId == widget.place.tomtomId,
+            orElse: () => null,
+          );
       if (mounted) {
         setState(() {
-          _savedPlace = saved;
-          _selectedIcon = saved?.icon;
-          _selectedColor = saved?.color;
-          _labelController.text = saved?.customName ?? '';
-          _isLoadingSavedPlace = false;
+          _saved = match;
+          _loadingSaved = false;
         });
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingSavedPlace = false;
-        });
-      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingSaved = false);
     }
   }
 
-  Future<void> _updateGraphic({
-    String? icon,
-    String? color,
-    String? customName,
-  }) async {
+  Future<void> _saveAndAddToToday() async {
+    final api = context.read<ApiService>();
+    final today = context.read<TodayRouteCubit>();
+    final scaffold = ScaffoldMessenger.of(context);
+    setState(() => _loadingSaved = true);
     try {
-      final apiService = context.read<ApiService>();
-      await apiService.updateBookmarkGraphic(
-        widget.place.tomtomId,
-        icon,
-        color,
-        customName: customName,
-      );
-
-      if (_savedPlace != null) {
-        setState(() {
-          _savedPlace = SavedPlace(
-            id: _savedPlace!.id,
-            place: _savedPlace!.place,
-            customName: customName != null && customName.isEmpty
-                ? null
-                : (customName ?? _savedPlace!.customName),
-            isPinned: _savedPlace!.isPinned,
-            icon: icon ?? _savedPlace!.icon,
-            color: color ?? _savedPlace!.color,
-          );
-        });
-        if (mounted) {
-          setState(() {
-            _isEditingGraphic = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile graphic saved successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
+      if (_saved == null) {
+        await api.savePlace(widget.place);
+        await api.bookmarkPlace(widget.place.tomtomId);
       }
+      await today.add(widget.place.tomtomId);
+      await _hydrateSaved();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update graphic')),
-        );
-      }
+      scaffold.showSnackBar(SnackBar(content: Text("Couldn't add to today.")));
+      setState(() => _loadingSaved = false);
     }
   }
 
-  String _weekDayShortName(int weekday) {
-    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return names[weekday - 1];
+  Future<void> _removeFromToday() async {
+    await context.read<TodayRouteCubit>().remove(widget.place.tomtomId);
   }
 
-  bool _isOpenDuring(DateTime visitStart, DateTime visitEnd) {
-    if (widget.place.hours.isEmpty) return false;
-
-    for (int dayOffset = -1; dayOffset <= 1; dayOffset++) {
-      final baseDate = DateTime(
-        visitStart.year,
-        visitStart.month,
-        visitStart.day,
-      ).add(Duration(days: dayOffset));
-
-      final dayOfWeek = baseDate.weekday - 1; // 0=Mon, ..., 6=Sun
-      final dayHours = widget.place.hours.where(
-        (h) => h.dayOfWeek == dayOfWeek,
-      );
-
-      for (final hours in dayHours) {
-        final startTime = DateTime(
-          baseDate.year,
-          baseDate.month,
-          baseDate.day,
-          hours.openTime.hour,
-          hours.openTime.minute,
-        );
-        var endTime = DateTime(
-          baseDate.year,
-          baseDate.month,
-          baseDate.day,
-          hours.closeTime.hour,
-          hours.closeTime.minute,
-        );
-        if (endTime.isBefore(startTime)) {
-          endTime = endTime.add(const Duration(days: 1));
-        }
-
-        if ((visitStart.isAfter(startTime) ||
-                visitStart.isAtSameMomentAs(startTime)) &&
-            (visitEnd.isBefore(endTime) ||
-                visitEnd.isAtSameMomentAs(endTime))) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  bool _isAvailableDuring(
-    DateTime start,
-    DateTime end,
-    CalendarDataState dataState,
-  ) {
-    if (!_isOpenDuring(start, end)) return false;
-
-    for (final event in dataState.remoteEvents) {
-      final eventStart =
-          event.startTime ??
-          DateTime(event.date.year, event.date.month, event.date.day);
-      final eventEnd =
-          event.endTime ??
-          DateTime(
-            event.endDate.year,
-            event.endDate.month,
-            event.endDate.day,
-            23,
-            59,
-            59,
-          );
-
-      if (start.isBefore(eventEnd) && end.isAfter(eventStart)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  void _showConflictMessage(
-    DateTime start,
-    DateTime end,
-    CalendarDataState dataState,
-  ) {
-    String message = '';
-    if (!_isOpenDuring(start, end)) {
-      message = 'Planned visit must be entirely within open business hours';
-    } else {
-      for (final event in dataState.remoteEvents) {
-        final eventStart =
-            event.startTime ??
-            DateTime(event.date.year, event.date.month, event.date.day);
-        final eventEnd =
-            event.endTime ??
-            DateTime(
-              event.endDate.year,
-              event.endDate.month,
-              event.endDate.day,
-              23,
-              59,
-              59,
-            );
-        if (start.isBefore(eventEnd) && end.isAfter(eventStart)) {
-          message = 'Conflicts with a personal calendar event';
-          break;
-        }
-      }
-    }
-
-    if (message.isNotEmpty) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.orange,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
-  Widget _buildEventTile(
-    DateTime date,
-    List<CalendarEventData<dynamic>> events,
-    Rect boundary,
-    DateTime startDuration,
-    DateTime endDuration,
-    CalendarDataState dataState,
-  ) {
-    if (events.isEmpty) return const SizedBox.shrink();
-    final event = events[0];
-    final isPlannedVisit = event.title == 'Planned Visit';
-    final isOpen = event.title == 'Open';
-    final isPersonal = !isOpen && !isPlannedVisit;
-
-    return GestureDetector(
-      onTapUp: (details) {
-        if (isPersonal) return;
-        if (!isPlannedVisit && _savedPlace?.averageVisitLength != null) {
-          final tappedMinutes = details.localPosition.dy.toInt();
-          final tappedTime = event.startTime!.add(
-            Duration(minutes: tappedMinutes),
-          );
-          final visitEnd = tappedTime.add(
-            Duration(minutes: _savedPlace!.averageVisitLength!),
-          );
-
-          if (_isAvailableDuring(tappedTime, visitEnd, dataState)) {
-            setState(() => _plannedVisitTime = tappedTime);
-          } else {
-            _showConflictMessage(tappedTime, visitEnd, dataState);
-          }
-        }
-      },
-      onDoubleTap: isPlannedVisit
-          ? () {
-              setState(() => _plannedVisitTime = null);
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Planned visit removed'),
-                  backgroundColor: Colors.grey,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            }
-          : null,
-      onVerticalDragStart: isPlannedVisit
-          ? (_) => _dragAccumulator = 0.0
-          : null,
-      onVerticalDragUpdate: isPlannedVisit
-          ? (details) {
-              if (_savedPlace?.averageVisitLength != null) {
-                _dragAccumulator += details.delta.dy;
-                if (_dragAccumulator.abs() >= 1.0) {
-                  final minutesDelta = _dragAccumulator.toInt();
-                  _dragAccumulator -= minutesDelta;
-
-                  final proposedTime = _plannedVisitTime!.add(
-                    Duration(minutes: minutesDelta),
-                  );
-                  final visitEnd = proposedTime.add(
-                    Duration(minutes: _savedPlace!.averageVisitLength!),
-                  );
-                  if (_isAvailableDuring(proposedTime, visitEnd, dataState)) {
-                    setState(() {
-                      _plannedVisitTime = proposedTime;
-                    });
-                  }
-                }
-              }
-            }
-          : null,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isPersonal
-              ? Colors.blueGrey.withValues(alpha: 0.6)
-              : event.color,
-          borderRadius: BorderRadius.circular(4),
-          boxShadow: isPlannedVisit
-              ? [
-                  const BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ]
-              : null,
-          border: isPlannedVisit
-              ? Border.all(color: Colors.white, width: 1.5)
-              : null,
-        ),
-        padding: const EdgeInsets.all(4),
-        child: Text(
-          event.title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
-      ),
-    );
-  }
-
-  EventController<Object?> _buildEventController(CalendarDataState dataState) {
-    final controller = EventController<Object?>();
-    final now = DateTime.now();
-    final startOfWeek = DateTime(
-      now.year,
-      now.month,
-      now.day,
-    ).subtract(Duration(days: now.weekday - 1));
-
-    // Generate events for 4 weeks in the past and 12 weeks in the future
-    for (int weekOffset = -4; weekOffset <= 12; weekOffset++) {
-      final weekStart = startOfWeek.add(Duration(days: weekOffset * 7));
-
-      for (final hours in widget.place.hours) {
-        final baseDate = weekStart.add(Duration(days: hours.dayOfWeek));
-        final startTime = DateTime(
-          baseDate.year,
-          baseDate.month,
-          baseDate.day,
-          hours.openTime.hour,
-          hours.openTime.minute,
-        );
-
-        var endTime = DateTime(
-          baseDate.year,
-          baseDate.month,
-          baseDate.day,
-          hours.closeTime.hour,
-          hours.closeTime.minute,
-        );
-
-        if (endTime.isBefore(startTime)) {
-          endTime = endTime.add(const Duration(days: 1));
-        }
-
-        controller.add(
-          CalendarEventData(
-            title: 'Open',
-            date: baseDate,
-            startTime: startTime,
-            endTime: endTime,
-            color: Colors.green.withValues(alpha: 0.7),
-          ),
-        );
-      }
-    }
-
-    if (_plannedVisitTime != null && _savedPlace?.averageVisitLength != null) {
-      controller.add(
-        CalendarEventData(
-          title: 'Planned Visit',
-          date: DateTime(
-            _plannedVisitTime!.year,
-            _plannedVisitTime!.month,
-            _plannedVisitTime!.day,
-          ),
-          startTime: _plannedVisitTime!,
-          endTime: _plannedVisitTime!.add(
-            Duration(minutes: _savedPlace!.averageVisitLength!),
-          ),
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
-        ),
-      );
-    }
-
-    // Add remote events (personal events)
-    controller.addAll(dataState.remoteEvents);
-
-    return controller;
-  }
-
-  Widget _buildContactInfoSection() {
-    final hasPhone =
-        widget.place.phone != null && widget.place.phone!.isNotEmpty;
-    final hasWebsite =
-        widget.place.website != null && widget.place.website!.isNotEmpty;
-    final hasCategories = widget.place.categories.isNotEmpty;
-
-    if (!hasPhone && !hasWebsite && !hasCategories) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (hasCategories) ...[
-            Wrap(
-              spacing: 8.0,
-              runSpacing: 4.0,
-              children: widget.place.categories.map((category) {
-                return Chip(
-                  label: Text(category, style: const TextStyle(fontSize: 12)),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.secondaryContainer,
-                  side: BorderSide.none,
-                  visualDensity: VisualDensity.compact,
-                );
-              }).toList(),
-            ),
-            if (hasPhone || hasWebsite) const SizedBox(height: 12),
-          ],
-          if (hasPhone) ...[
-            Row(
-              children: [
-                Icon(
-                  Icons.phone,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    widget.place.phone!,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
-              ],
-            ),
-            if (hasWebsite) const SizedBox(height: 12),
-          ],
-          if (hasWebsite) ...[
-            Row(
-              children: [
-                Icon(
-                  Icons.language,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    widget.place.website!,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCalendarOptions() {
-    return SegmentedButton<CalendarViewType>(
-      segments: const [
-        ButtonSegment(value: CalendarViewType.singleDay, label: Text('1 Day')),
-        ButtonSegment(value: CalendarViewType.threeDay, label: Text('3 Days')),
-        ButtonSegment(value: CalendarViewType.week, label: Text('Week')),
-      ],
-      selected: <CalendarViewType>{_currentView},
-      onSelectionChanged: (Set<CalendarViewType> selection) {
-        setState(() {
-          _currentView = selection.first;
-          _baseDate = DateTime.now();
-        });
-      },
-      showSelectedIcon: false,
-      style: const ButtonStyle(visualDensity: VisualDensity.compact),
-    );
-  }
-
-  Widget _buildAddressSection() {
-    final addressParts = widget.place.address.split(', ');
-    final String line1 = addressParts.isNotEmpty
-        ? addressParts[0]
-        : widget.place.address;
-    final String line2 = addressParts.length > 1
-        ? addressParts.skip(1).join(', ')
-        : '';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 18,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Address',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  line1,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (line2.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    line2,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Theme.of(context).textTheme.bodySmall?.color,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: SizedBox(
-              width: 80,
-              height: 80,
-              child: FlutterMap(
-                options: MapOptions(
-                  initialCenter: widget.place.location,
-                  initialZoom: 15.0,
-                  interactionOptions: const InteractionOptions(
-                    flags: InteractiveFlag.none, // Static map
-                  ),
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate: Theme.of(context).brightness == Brightness.dark
-                        ? 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-                        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.brandonlc.isitopen',
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: widget.place.location,
-                        width: 30,
-                        height: 30,
-                        child: const Icon(
-                          Icons.location_on,
-                          color: Colors.red,
-                          size: 30,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAverageVisitLengthPicker() {
-    if (_isLoadingSavedPlace || _savedPlace == null) {
-      return const SizedBox.shrink();
-    }
-
-    final List<int?> durations = [null, 15, 30, 45, 60, 90, 120, 180, 240];
-    String formatDuration(int? mins) {
-      if (mins == null) return 'None';
-      if (mins < 60) return '$mins mins';
-      final hrs = mins / 60;
-      return '${hrs.toStringAsFixed(hrs.truncateToDouble() == hrs ? 0 : 1)} ${hrs == 1 ? 'hr' : 'hrs'}';
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Icon(Icons.timer, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Average Visit',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                Text(
-                  'Tap calendar to see if it fits, double tap to remove',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          DropdownButton<int?>(
-            value: _savedPlace!.averageVisitLength,
-            items: durations
-                .map(
-                  (d) => DropdownMenuItem(
-                    value: d,
-                    child: Text(formatDuration(d)),
-                  ),
-                )
-                .toList(),
-            onChanged: (val) async {
-              try {
-                final apiService = context.read<ApiService>();
-                await apiService.updateVisitLength(widget.place.tomtomId, val);
-                if (mounted) {
-                  setState(() {
-                    _savedPlace = SavedPlace(
-                      id: _savedPlace!.id,
-                      place: _savedPlace!.place,
-                      customName: _savedPlace!.customName,
-                      icon: _savedPlace!.icon,
-                      color: _savedPlace!.color,
-                      isPinned: _savedPlace!.isPinned,
-                      averageVisitLength: val,
-                    );
-                    if (val == null) {
-                      _plannedVisitTime = null;
-                    }
-                  });
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Failed to update visit length'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            underline: const SizedBox(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGraphicPicker() {
-    if (_isLoadingSavedPlace) {
-      return const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-    if (_savedPlace == null) {
-      return const SizedBox.shrink(); // Not saved -> don't show picker
-    }
-
-    final currentColorHex =
-        _selectedColor ??
-        _savedPlace!.color ??
-        Colors.blue.toARGB32().toRadixString(16);
-    final currentColor = Color(int.parse(currentColorHex, radix: 16));
-    final currentIconName = _selectedIcon ?? _savedPlace!.icon ?? 'star';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: currentColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  _availableIcons[currentIconName] ?? Icons.star,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Row(
-                  children: [
-                    const Flexible(
-                      child: Text(
-                        'Profile Graphic',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (_savedPlace?.customName != null &&
-                        _savedPlace!.customName!.isNotEmpty) ...[
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          '—  ${_savedPlace!.customName!}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                            fontStyle: FontStyle.italic,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: Icon(
-                  _isEditingGraphic ? Icons.close : Icons.edit,
-                  size: 20,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _isEditingGraphic = !_isEditingGraphic;
-                    if (!_isEditingGraphic) {
-                      // Reset selections if cancelling
-                      _selectedIcon = _savedPlace?.icon;
-                      _selectedColor = _savedPlace?.color;
-                      _labelController.text = _savedPlace?.customName ?? '';
-                    }
-                  });
-                },
-              ),
-            ],
-          ),
-          if (_isEditingGraphic) ...[
-            const SizedBox(height: 16),
-            const Text('Color', style: TextStyle(fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: _availableColors.map((color) {
-                final isSelected = color.toARGB32() == currentColor.toARGB32();
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedColor = color.toARGB32().toRadixString(16);
-                    });
-                  },
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border:
-                          isSelected
-                              ? Border.all(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                width: 2.5,
-                              )
-                              : Border.all(
-                                color: color.computeLuminance() > 0.5
-                                    ? Colors.black12
-                                    : Colors.white12,
-                                width: 1,
-                              ),
-                      boxShadow:
-                          isSelected
-                              ? [
-                                BoxShadow(
-                                  color: color.withValues(alpha: 0.4),
-                                  blurRadius: 6,
-                                  spreadRadius: 1,
-                                ),
-                              ]
-                              : null,
-                    ),
-                    child:
-                        isSelected
-                            ? Center(
-                              child: Icon(
-                                Icons.check,
-                                size: 20,
-                                color:
-                                    color.computeLuminance() > 0.5
-                                        ? Colors.black87
-                                        : Colors.white,
-                              ),
-                            )
-                            : null,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-            const Text('Icon', style: TextStyle(fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _availableIcons.entries.map((entry) {
-                  final isSelected = entry.key == currentIconName;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedIcon = entry.key;
-                      });
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? currentColor.withValues(alpha: 0.2)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        border: isSelected
-                            ? Border.all(color: currentColor)
-                            : Border.all(color: Colors.transparent),
-                      ),
-                      child: Icon(
-                        entry.value,
-                        color: isSelected
-                            ? currentColor
-                            : Theme.of(context).iconTheme.color,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text('Label', style: TextStyle(fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _suggestedLabels.map((label) {
-                  final isSelected = _labelController.text == label;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: ChoiceChip(
-                      label: Text(label),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          _labelController.text = selected ? label : '';
-                        });
-                      },
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _labelController,
-              decoration: const InputDecoration(
-                hintText: 'Custom label (e.g. My Gym)',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-              onChanged: (val) {
-                setState(() {}); // refresh chip selection if typed manually
-              },
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _updateGraphic(
-                  icon: _selectedIcon,
-                  color: _selectedColor,
-                  customName: _labelController.text,
-                ),
-                icon: const Icon(Icons.save),
-                label: const Text('Save Profile'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimeLineLabel(
-    DateTime date,
-    bool use24HourFormat,
-    Color labelColor,
-  ) {
-    final timeString = use24HourFormat
-        ? "${date.hour.toString().padLeft(2, '0')}:00"
-        : DateFormat(
-            'h a',
-          ).format(DateTime(date.year, date.month, date.day, date.hour));
-    final label = Center(
-      child: Text(
-        timeString,
-        style: TextStyle(color: labelColor, fontSize: 12),
-      ),
-    );
-
-    // The package skips the label for hour 0 (12 AM / 00:00),
-    // so render it above the hour 1 slot.
-    if (date.hour == 1) {
-      final midnightString = use24HourFormat ? '00:00' : '12 AM';
-      return Stack(
-        clipBehavior: Clip.none,
-        children: [
-          label,
-          Positioned(
-            top: -60, // one hour height (heightPerMinute=1 * 60)
-            height: 60,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Text(
-                midnightString,
-                style: TextStyle(color: labelColor, fontSize: 12),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return label;
-  }
-
-  Widget _buildCalendar(
-    Color textColor,
-    Color textSmallColor,
-    bool use24HourFormat,
-    CalendarDataState dataState,
-  ) {
-    List<WeekDays> weekDays = WeekDays.values;
-    String headerText = "";
-    int daysToAdvance = 0;
-    bool showNavigation = true;
-
-    if (_currentView == CalendarViewType.threeDay) {
-      daysToAdvance = 3;
-      weekDays = [
-        WeekDays.values[_baseDate.weekday - 1],
-        WeekDays.values[_baseDate.add(const Duration(days: 1)).weekday - 1],
-        WeekDays.values[_baseDate.add(const Duration(days: 2)).weekday - 1],
-      ];
-      headerText = "3-Day Schedule";
-    } else if (_currentView == CalendarViewType.singleDay) {
-      daysToAdvance = 1;
-      headerText = "Daily Schedule";
-    } else {
-      daysToAdvance = 7;
-      headerText = "Weekly Schedule";
-      showNavigation = false;
-    }
-
-    final now = DateTime.now();
-    final initialScrollOffset =
-        (now.hour * 60.0 + now.minute) * 1.0; // 1.0 is heightPerMinute
-
-    Widget calendarWidget;
-    if (_currentView == CalendarViewType.singleDay) {
-      calendarWidget = DayView(
-        key: ValueKey(_baseDate),
-        controller: _buildEventController(dataState),
-        initialDay: _baseDate,
-        scrollOffset: initialScrollOffset,
-        minDay: _baseDate.subtract(const Duration(days: 28)),
-        maxDay: _baseDate.add(const Duration(days: 84)),
-        heightPerMinute: 1, // Compact view
-        scrollPhysics: const ClampingScrollPhysics(),
-        pageViewPhysics: const NeverScrollableScrollPhysics(),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        headerStyle: HeaderStyle(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-          ),
-        ),
-        eventArranger: const StackEventArranger(),
-        eventTileBuilder: (date, events, boundary, start, end) =>
-            _buildEventTile(date, events, boundary, start, end, dataState),
-        showLiveTimeLineInAllDays: true,
-        onDateTap: (date) {
-          if (_savedPlace?.averageVisitLength != null) {
-            final visitEnd = date.add(
-              Duration(minutes: _savedPlace!.averageVisitLength!),
-            );
-            if (_isAvailableDuring(date, visitEnd, dataState)) {
-              setState(() => _plannedVisitTime = date);
-            } else {
-              _showConflictMessage(date, visitEnd, dataState);
-            }
-          }
-        },
-        dayTitleBuilder: (date) => const SizedBox.shrink(),
-        hourIndicatorSettings: HourIndicatorSettings(
-          color: Theme.of(context).dividerColor,
-        ),
-        liveTimeIndicatorSettings: LiveTimeIndicatorSettings(
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        timeLineBuilder: (date) => _buildTimeLineLabel(
-          date,
-          use24HourFormat,
-          Theme.of(context).textTheme.bodySmall?.color ?? textSmallColor,
-        ),
-      );
-    } else {
-      calendarWidget = WeekView(
-        key: ValueKey(_baseDate),
-        controller: _buildEventController(dataState),
-        minDay: _baseDate.subtract(const Duration(days: 28)),
-        maxDay: _baseDate.add(const Duration(days: 84)),
-        initialDay: _baseDate,
-        scrollOffset: initialScrollOffset,
-        startDay: _currentView == CalendarViewType.threeDay
-            ? WeekDays.values[_baseDate.weekday - 1]
-            : WeekDays.monday,
-        weekDays: weekDays,
-        heightPerMinute: 1, // Compact view
-        scrollPhysics: const ClampingScrollPhysics(),
-        pageViewPhysics: const NeverScrollableScrollPhysics(),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        headerStyle: HeaderStyle(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-          ),
-        ),
-        weekTitleBackgroundColor: Theme.of(context).colorScheme.primary,
-        eventArranger: const StackEventArranger(),
-        eventTileBuilder: (date, events, boundary, start, end) =>
-            _buildEventTile(date, events, boundary, start, end, dataState),
-        showLiveTimeLineInAllDays: true,
-        weekPageHeaderBuilder: (start, end) => const SizedBox.shrink(),
-        weekNumberBuilder: (date) => const SizedBox.shrink(),
-        hourIndicatorSettings: HourIndicatorSettings(
-          color: Theme.of(context).dividerColor,
-        ),
-        liveTimeIndicatorSettings: LiveTimeIndicatorSettings(
-          color: Theme.of(context).colorScheme.primary,
-          showBullet: false,
-        ),
-        weekDetectorBuilder:
-            ({
-              required DateTime date,
-              required double height,
-              required double width,
-              required double heightPerMinute,
-              required MinuteSlotSize minuteSlotSize,
-            }) {
-              return _WeekDayColumnWithDot(
-                date: date,
-                height: height,
-                width: width,
-                heightPerMinute: heightPerMinute,
-                minuteSlotSize: minuteSlotSize,
-                onDateTap: (tappedDate) {
-                  if (_savedPlace?.averageVisitLength != null) {
-                    final visitEnd = tappedDate.add(
-                      Duration(minutes: _savedPlace!.averageVisitLength!),
-                    );
-                    if (_isAvailableDuring(tappedDate, visitEnd, dataState)) {
-                      setState(() => _plannedVisitTime = tappedDate);
-                    } else {
-                      _showConflictMessage(tappedDate, visitEnd, dataState);
-                    }
-                  }
-                },
-                dotColor: Theme.of(context).colorScheme.primary,
-              );
-            },
-        timeLineBuilder: (date) => _buildTimeLineLabel(
-          date,
-          use24HourFormat,
-          Theme.of(context).textTheme.bodySmall?.color ?? textSmallColor,
-        ),
-        weekDayBuilder: (date) {
-          final isToday = DateUtils.isSameDay(date, DateTime.now());
-          final colors = Theme.of(context).colorScheme;
-          return Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-              decoration: isToday
-                  ? BoxDecoration(
-                      color: colors.primaryContainer.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: colors.primary.withValues(alpha: 0.4),
-                      ),
-                    )
-                  : null,
-              child: Text(
-                _weekDayShortName(date.weekday),
-                style: TextStyle(
-                  color: isToday ? colors.onPrimaryContainer : Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    }
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (showNavigation)
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () {
-                    setState(() {
-                      _baseDate = _baseDate.subtract(
-                        Duration(days: daysToAdvance),
-                      );
-                    });
-                  },
-                )
-              else
-                const SizedBox(width: 48), // Spacer to maintain alignment
-              Expanded(
-                child: Text(
-                  headerText,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              if (showNavigation)
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: () {
-                    setState(() {
-                      _baseDate = _baseDate.add(Duration(days: daysToAdvance));
-                    });
-                  },
-                )
-              else
-                const SizedBox(width: 48), // Spacer to maintain alignment
-            ],
-          ),
-        ),
-        Expanded(
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: Theme.of(context).colorScheme.copyWith(
-                secondaryContainer: Theme.of(context).scaffoldBackgroundColor,
-                primaryContainer: Theme.of(context).scaffoldBackgroundColor,
-                surface: Theme.of(context).scaffoldBackgroundColor,
-                error: Colors.transparent,
-              ),
-              canvasColor: Theme.of(context).scaffoldBackgroundColor,
-              cardColor: Theme.of(context).scaffoldBackgroundColor,
-              secondaryHeaderColor: Theme.of(context).scaffoldBackgroundColor,
-            ),
-            child: calendarWidget,
-          ),
-        ),
-      ],
-    );
+  Future<void> _removeFromSaved() async {
+    final api = context.read<ApiService>();
+    final today = context.read<TodayRouteCubit>();
+    final nav = Navigator.of(context);
+    try {
+      await api.deleteBookmark(widget.place.tomtomId);
+      await today.remove(widget.place.tomtomId);
+      if (mounted) nav.pop();
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final use24HourFormat = context
-        .watch<PreferencesCubit>()
-        .state
-        .use24HourFormat;
+    final theme = context.places;
+    final use24h = context.watch<PreferencesCubit>().state.use24HourFormat;
+    final now = DateTime.now();
+    final status = PlaceStatusCalculator.compute(
+      widget.place,
+      now: now,
+      use24HourFormat: use24h,
+    );
 
     return Scaffold(
+      backgroundColor: theme.paper,
       appBar: AppBar(
-        title: Text(widget.place.name),
+        backgroundColor: theme.paper,
+        surfaceTintColor: theme.paper,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        foregroundColor: theme.ink,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
-          if (_isLoadingSavedPlace)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            )
-          else if (_savedPlace == null)
-            IconButton(
-              icon: const Icon(Icons.bookmark_add_outlined),
-              tooltip: 'Save Place',
-              onPressed: () async {
-                setState(() => _isLoadingSavedPlace = true);
-                try {
-                  final apiService = context.read<ApiService>();
-                  await apiService.savePlace(widget.place);
-                  await apiService.bookmarkPlace(widget.place.tomtomId);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Saved to My Places'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                    _checkSavedStatus();
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    setState(() => _isLoadingSavedPlace = false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Error saving place'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
+          if (_saved != null)
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_horiz_rounded, color: theme.inkMuted),
+              color: theme.paperRaised,
+              onSelected: (v) {
+                if (v == 'remove') _removeFromSaved();
               },
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.delete),
-              tooltip: 'Remove from Saved Places',
-              onPressed: () async {
-                setState(() => _isLoadingSavedPlace = true);
-                try {
-                  final apiService = context.read<ApiService>();
-                  await apiService.deleteBookmark(widget.place.tomtomId);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Removed from My Places'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                    Navigator.pop(context);
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    setState(() => _isLoadingSavedPlace = false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Error deleting place'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'remove',
+                  child: Text('Remove from saved'),
+                ),
+              ],
             ),
         ],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isMobile = constraints.maxWidth < 800;
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            PlacesSpacing.lg, 0, PlacesSpacing.lg, 120),
+          children: [
+            const SizedBox(height: PlacesSpacing.sm),
+            _Hero(place: widget.place, savedPlace: _saved, status: status),
+            const SizedBox(height: PlacesSpacing.lg),
+            _AddressBlock(place: widget.place),
+            if (widget.place.hours.isNotEmpty) ...[
+              const SizedBox(height: PlacesSpacing.xxl),
+              _HoursTable(hours: widget.place.hours, today: now.weekday - 1, use24h: use24h),
+            ] else if (_isCustomPlace) ...[
+              const SizedBox(height: PlacesSpacing.xxl),
+              _HoursPlaceholder(onAddHours: _showHoursEditor),
+            ],
+            if (_saved != null) ...[
+              const SizedBox(height: PlacesSpacing.xxl),
+              _PlanVisitEntry(
+                saved: _saved!,
+                onOpen: _openPlanVisit,
+              ),
+            ],
+            if (widget.place.phone != null || widget.place.website != null) ...[
+              const SizedBox(height: PlacesSpacing.xxl),
+              _ContactBlock(place: widget.place),
+            ],
+            if (_saved != null && _isCustomPlace) ...[
+              const SizedBox(height: PlacesSpacing.xxl),
+              _CustomPlaceAffordances(
+                saved: _saved!,
+                onChanged: _hydrateSaved,
+              ),
+            ],
+          ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            PlacesSpacing.lg, PlacesSpacing.sm, PlacesSpacing.lg, PlacesSpacing.md),
+          child: BlocBuilder<TodayRouteCubit, TodayRouteState>(
+            builder: (context, route) {
+              final isOn = route.contains(widget.place.tomtomId);
+              return _StickyCTA(
+                loading: _loadingSaved,
+                isOnToday: isOn,
+                onAdd: _saveAndAddToToday,
+                onRemove: _removeFromToday,
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
 
-          Widget detailsContent = SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  void _showHoursEditor() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _HoursEditorSheet(place: widget.place),
+    ).then((_) => _hydrateSaved());
+  }
+
+  void _openPlanVisit() {
+    final saved = _saved;
+    if (saved == null) return;
+    Navigator.push<int?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PlanVisitScreen(place: widget.place, saved: saved),
+      ),
+    ).then((_) => _hydrateSaved());
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Hero
+// ─────────────────────────────────────────────────────────────────────
+
+class _Hero extends StatelessWidget {
+  const _Hero({required this.place, required this.savedPlace, required this.status});
+
+  final Place place;
+  final SavedPlace? savedPlace;
+  final PlaceStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.places;
+    final name = savedPlace?.customName ?? place.name;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (savedPlace != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: PlacesSpacing.md),
+            child: GraphicsHelper.buildProfileGraphic(savedPlace!, size: 40),
+          ),
+        Text(name, style: PlacesType.display(theme.ink)),
+        if (place.categories.isNotEmpty) ...[
+          const SizedBox(height: PlacesSpacing.xs),
+          Text(
+            place.categories.first.replaceAll('_', ' '),
+            style: PlacesType.label(theme.inkMuted),
+          ),
+        ],
+        const SizedBox(height: PlacesSpacing.lg),
+        StatusPill(status: status, size: StatusPillSize.medium),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Address
+// ─────────────────────────────────────────────────────────────────────
+
+class _AddressBlock extends StatelessWidget {
+  const _AddressBlock({required this.place});
+  final Place place;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.places;
+    final hasMap = AddressMapThumb.hasUsableLocation(place.location);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.place_outlined, size: 20, color: theme.inkMuted),
+              const SizedBox(width: PlacesSpacing.sm),
+              Expanded(
+                child: Text(place.address, style: PlacesType.body(theme.ink)),
+              ),
+            ],
+          ),
+        ),
+        if (hasMap) ...[
+          const SizedBox(width: PlacesSpacing.md),
+          AddressMapThumb(location: place.location),
+        ],
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Weekly hours table
+// ─────────────────────────────────────────────────────────────────────
+
+class _HoursTable extends StatelessWidget {
+  const _HoursTable({required this.hours, required this.today, required this.use24h});
+
+  final List<BusinessHours> hours;
+  final int today; // 0..6 Mon..Sun
+  final bool use24h;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.places;
+    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Hours', style: PlacesType.headline(theme.ink)),
+        const SizedBox(height: PlacesSpacing.md),
+        for (var d = 0; d < 7; d++)
+          _HoursRow(
+            label: labels[d],
+            isToday: d == today,
+            blocks: hours.where((h) => h.dayOfWeek == d).toList(),
+            use24h: use24h,
+          ),
+      ],
+    );
+  }
+}
+
+class _HoursRow extends StatelessWidget {
+  const _HoursRow({
+    required this.label,
+    required this.isToday,
+    required this.blocks,
+    required this.use24h,
+  });
+
+  final String label;
+  final bool isToday;
+  final List<BusinessHours> blocks;
+  final bool use24h;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.places;
+    final highlightBg = isToday ? theme.anchor.withValues(alpha: 0.08) : null;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: highlightBg,
+        borderRadius: BorderRadius.circular(PlacesRadius.sm),
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: PlacesSpacing.sm, vertical: PlacesSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 44,
+            child: Row(
               children: [
-                _buildGraphicPicker(),
-                _buildAverageVisitLengthPicker(),
-                _buildAddressSection(),
-                const SizedBox(height: 16),
-                _buildContactInfoSection(),
-                // More details will be added here later
+                if (isToday)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Container(
+                      width: 6, height: 6,
+                      decoration: BoxDecoration(
+                        color: theme.anchor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                Text(
+                  label,
+                  style: PlacesType.body(isToday ? theme.ink : theme.inkMuted)
+                      .copyWith(fontWeight: isToday ? FontWeight.w600 : FontWeight.w400),
+                ),
               ],
             ),
-          );
+          ),
+          const SizedBox(width: PlacesSpacing.md),
+          Expanded(
+            child: blocks.isEmpty
+                ? Text('Closed', style: PlacesType.body(theme.inkMuted))
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final b in blocks)
+                        Text(
+                          '${_fmt(b.openTime.hour, b.openTime.minute, use24h)} – '
+                          '${_fmt(b.closeTime.hour, b.closeTime.minute, use24h)}',
+                          style: PlacesType.body(isToday ? theme.ink : theme.inkMuted),
+                        ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          Widget calendarContent = Column(
+  static String _fmt(int h, int m, bool use24) {
+    if (use24) {
+      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+    }
+    final hour12 = h == 0 ? 12 : (h > 12 ? h - 12 : h);
+    final suffix = h < 12 ? 'am' : 'pm';
+    if (m == 0) return '$hour12$suffix';
+    return '$hour12:${m.toString().padLeft(2, '0')}$suffix';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Plan visit entry
+// ─────────────────────────────────────────────────────────────────────
+
+class _PlanVisitEntry extends StatelessWidget {
+  const _PlanVisitEntry({required this.saved, required this.onOpen});
+
+  final SavedPlace saved;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.places;
+    final mins = saved.averageVisitLength;
+    final hasValue = mins != null;
+
+    return Material(
+      color: theme.paperRaised,
+      borderRadius: BorderRadius.circular(PlacesRadius.md),
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(PlacesRadius.md),
+        child: Container(
+          padding: const EdgeInsets.all(PlacesSpacing.lg),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(PlacesRadius.md),
+            border: Border.all(color: theme.ashSoft),
+          ),
+          child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
-                child: Row(
+              Icon(
+                Icons.schedule_outlined,
+                color: hasValue ? theme.anchor : theme.inkMuted,
+                size: 22,
+              ),
+              const SizedBox(width: PlacesSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (isMobile) ...[
-                      IconButton(
-                        icon: Icon(
-                          _isCalendarMinimized
-                              ? Icons.expand_less
-                              : Icons.minimize,
-                          size: 24,
-                        ),
-                        tooltip: _isCalendarMinimized
-                            ? 'Show calendar'
-                            : 'Minimize calendar',
-                        onPressed: () => setState(() {
-                          _isCalendarMinimized = !_isCalendarMinimized;
-                          if (_isCalendarMinimized) {
-                            _isCalendarExpanded = false;
-                          }
-                        }),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
-                    const Spacer(),
-                    _buildCalendarOptions(),
-                    const Spacer(),
-                    if (isMobile) ...[
-                      IconButton(
-                        icon: Icon(
-                          _isCalendarExpanded
-                              ? Icons.fullscreen_exit
-                              : Icons.fullscreen,
-                          size: 24,
-                        ),
-                        tooltip: _isCalendarExpanded
-                            ? 'Collapse calendar'
-                            : 'Expand calendar',
-                        onPressed: () => setState(() {
-                          _isCalendarExpanded = !_isCalendarExpanded;
-                          if (_isCalendarExpanded) {
-                            _isCalendarMinimized = false;
-                          }
-                        }),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
+                    Text('Plan visit', style: PlacesType.title(theme.ink)),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasValue
+                          ? 'Typical visit ${_formatDuration(mins)}. Check if it fits.'
+                          : 'Set a typical length to see if it fits your day.',
+                      style: PlacesType.bodySmall(theme.inkMuted),
+                    ),
                   ],
                 ),
               ),
-              if (!_isCalendarMinimized)
-                Expanded(
-                  child: BlocBuilder<CalendarDataBloc, CalendarDataState>(
-                    builder: (context, dataState) {
-                      return _buildCalendar(
-                        colorScheme.onSurface,
-                        colorScheme.onSurfaceVariant,
-                        use24HourFormat,
-                        dataState,
-                      );
-                    },
+              const SizedBox(width: PlacesSpacing.sm),
+              if (hasValue)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: PlacesSpacing.sm, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.anchor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(PlacesRadius.pill),
                   ),
-                ),
-            ],
-          );
-
-          if (isMobile) {
-            return Column(
-              children: [
-                if (!_isCalendarExpanded) ...[
-                  // Details section — expands when calendar is minimized
-                  Expanded(
-                    flex: _isCalendarMinimized ? 1 : 0,
-                    child: Container(
-                      constraints: _isCalendarMinimized
-                          ? null
-                          : BoxConstraints(
-                              maxHeight:
-                                  MediaQuery.of(context).size.height * 0.3,
-                            ),
-                      child: detailsContent,
+                  child: Text(
+                    _formatDuration(mins),
+                    style: TextStyle(
+                      color: theme.anchor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const Divider(height: 1),
-                ],
-                // Calendar: minimized just shows the picker row, otherwise expands
-                if (_isCalendarMinimized)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24.0),
-                    child: calendarContent,
-                  )
-                else
-                  Expanded(child: calendarContent),
-              ],
-            );
-          } else {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: detailsContent),
-                const VerticalDivider(width: 1),
-                Expanded(child: calendarContent),
-              ],
-            );
-          }
-        },
+                ),
+              Icon(Icons.chevron_right_rounded, color: theme.inkMuted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _formatDuration(int? mins) {
+    if (mins == null) return '';
+    if (mins < 60) return '$mins min';
+    final hrs = mins / 60;
+    if (hrs == hrs.truncateToDouble()) return '${hrs.toInt()} hr';
+    return '${hrs.toStringAsFixed(1)} hr';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Empty hours (custom places)
+// ─────────────────────────────────────────────────────────────────────
+
+class _HoursPlaceholder extends StatelessWidget {
+  const _HoursPlaceholder({required this.onAddHours});
+  final VoidCallback onAddHours;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.places;
+    return Container(
+      padding: const EdgeInsets.all(PlacesSpacing.lg),
+      decoration: BoxDecoration(
+        color: theme.paperRaised,
+        borderRadius: BorderRadius.circular(PlacesRadius.md),
+        border: Border.all(color: theme.ashSoft),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.schedule_outlined, color: theme.inkMuted),
+          const SizedBox(width: PlacesSpacing.md),
+          Expanded(
+            child: Text(
+              'No hours yet for this place.',
+              style: PlacesType.body(theme.inkMuted),
+            ),
+          ),
+          TextButton(
+            onPressed: onAddHours,
+            style: TextButton.styleFrom(foregroundColor: theme.anchor),
+            child: const Text('Add hours'),
+          ),
+        ],
       ),
     );
   }
 }
 
-class StackEventArranger<T extends Object?> extends EventArranger<T> {
-  const StackEventArranger();
+// ─────────────────────────────────────────────────────────────────────
+// Contact
+// ─────────────────────────────────────────────────────────────────────
+
+class _ContactBlock extends StatelessWidget {
+  const _ContactBlock({required this.place});
+  final Place place;
 
   @override
-  List<OrganizedCalendarEventData<T>> arrange({
-    required DateTime calendarViewDate,
-    required List<CalendarEventData<T>> events,
-    required double height,
-    required double width,
-    required double heightPerMinute,
-    required int startHour,
-  }) {
-    final arrangedEvents = <OrganizedCalendarEventData<T>>[];
-
-    // Ensure 'Open' is rendered first (background), and 'Planned Visit' last (top).
-    final sortedEvents = List<CalendarEventData<T>>.from(events)
-      ..sort((a, b) {
-        // 'Open' always first
-        if (a.title == 'Open' && b.title != 'Open') return -1;
-        if (a.title != 'Open' && b.title == 'Open') return 1;
-
-        // 'Planned Visit' always last
-        if (a.title == 'Planned Visit' && b.title != 'Planned Visit') return 1;
-        if (a.title != 'Planned Visit' && b.title == 'Planned Visit') return -1;
-
-        return 0;
-      });
-
-    for (final event in sortedEvents) {
-      final startTime = event.startTime ?? event.date;
-      final endTime = event.endTime ?? event.date;
-
-      final startOffset = (startTime.hour - startHour) * 60 + startTime.minute;
-      final top = math.max(0.0, startOffset * heightPerMinute);
-
-      var endOffset = (endTime.hour - startHour) * 60 + endTime.minute;
-      var bottom = height - (endOffset * heightPerMinute);
-
-      // If the event crosses midnight (endTime is on the next day)
-      // or endTime is actually 00:00:00 (which is parsed as the same day but 0th hour,
-      // making endOffset negative or smaller than startOffset),
-      // it extends to the end of the day.
-      if (endTime.day != startTime.day || bottom > (height - top)) {
-        bottom = 0.0;
-      }
-
-      arrangedEvents.add(
-        OrganizedCalendarEventData<T>(
-          calendarViewDate: calendarViewDate,
-          startDuration: startTime,
-          endDuration: endTime,
-          top: top,
-          bottom: bottom,
-          left: 0.0,
-          right: 0.0,
-          events: [event],
-        ),
-      );
-    }
-
-    return arrangedEvents;
+  Widget build(BuildContext context) {
+    final theme = context.places;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Contact', style: PlacesType.headline(theme.ink)),
+        const SizedBox(height: PlacesSpacing.md),
+        if (place.phone != null && place.phone!.isNotEmpty)
+          _ContactRow(icon: Icons.phone_outlined, text: place.phone!),
+        if (place.website != null && place.website!.isNotEmpty)
+          _ContactRow(icon: Icons.language_outlined, text: place.website!),
+      ],
+    );
   }
 }
 
-class _WeekDayColumnWithDot extends StatefulWidget {
-  final DateTime date;
-  final double height;
-  final double width;
-  final double heightPerMinute;
-  final MinuteSlotSize minuteSlotSize;
-  final DateTapCallback? onDateTap;
-  final Color dotColor;
-
-  const _WeekDayColumnWithDot({
-    required this.date,
-    required this.height,
-    required this.width,
-    required this.heightPerMinute,
-    required this.minuteSlotSize,
-    required this.dotColor,
-    this.onDateTap,
-  });
+class _ContactRow extends StatelessWidget {
+  const _ContactRow({required this.icon, required this.text});
+  final IconData icon;
+  final String text;
 
   @override
-  State<_WeekDayColumnWithDot> createState() => _WeekDayColumnWithDotState();
+  Widget build(BuildContext context) {
+    final theme = context.places;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: PlacesSpacing.sm),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: theme.inkMuted),
+          const SizedBox(width: PlacesSpacing.md),
+          Expanded(
+            child: Text(text, style: PlacesType.body(theme.ink)),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _WeekDayColumnWithDotState extends State<_WeekDayColumnWithDot> {
-  late Timer _timer;
-  late TimeOfDay _currentTime;
+// ─────────────────────────────────────────────────────────────────────
+// Custom-place affordances
+// ─────────────────────────────────────────────────────────────────────
+
+class _CustomPlaceAffordances extends StatefulWidget {
+  const _CustomPlaceAffordances({required this.saved, required this.onChanged});
+
+  final SavedPlace saved;
+  final VoidCallback onChanged;
+
+  @override
+  State<_CustomPlaceAffordances> createState() => _CustomPlaceAffordancesState();
+}
+
+class _CustomPlaceAffordancesState extends State<_CustomPlaceAffordances> {
+  late final TextEditingController _label;
+  bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    _currentTime = TimeOfDay.now();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      final time = TimeOfDay.now();
-      if (time != _currentTime && mounted) {
-        setState(() => _currentTime = time);
-      }
-    });
+    _label = TextEditingController(
+      text: widget.saved.customName ?? widget.saved.place.name,
+    );
   }
 
   @override
   void dispose() {
-    _timer.cancel();
+    _label.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveLabel() async {
+    setState(() => _saving = true);
+    try {
+      await context.read<ApiService>().updateBookmarkGraphic(
+            widget.saved.place.tomtomId,
+            widget.saved.icon,
+            widget.saved.color,
+            customName: _label.text.trim().isEmpty ? null : _label.text.trim(),
+          );
+      widget.onChanged();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isToday = DateUtils.isSameDay(widget.date, DateTime.now());
-    final heightPerSlot =
-        widget.minuteSlotSize.minutes * widget.heightPerMinute;
-    final slots = (24 * 60) ~/ widget.minuteSlotSize.minutes;
+    final theme = context.places;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Custom place', style: PlacesType.headline(theme.ink)),
+        const SizedBox(height: PlacesSpacing.md),
+        TextField(
+          controller: _label,
+          style: PlacesType.body(theme.ink),
+          decoration: InputDecoration(
+            labelText: 'Label',
+            labelStyle: PlacesType.label(theme.inkMuted),
+            filled: true,
+            fillColor: theme.paperRaised,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(PlacesRadius.sm),
+              borderSide: BorderSide(color: theme.ash),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(PlacesRadius.sm),
+              borderSide: BorderSide(color: theme.ashSoft),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(PlacesRadius.sm),
+              borderSide: BorderSide(color: theme.anchor, width: 2),
+            ),
+          ),
+          onSubmitted: (_) => _saveLabel(),
+        ),
+        const SizedBox(height: PlacesSpacing.sm),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: _saving ? null : _saveLabel,
+            style: TextButton.styleFrom(foregroundColor: theme.anchor),
+            child: Text(_saving ? 'Saving…' : 'Save label'),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
-    return SizedBox(
-      height: widget.height,
-      width: widget.width,
-      child: Stack(
-        children: [
-          // Tap detector slots
-          for (int i = 0; i < slots; i++)
-            Positioned(
-              top: heightPerSlot * i,
-              left: 0,
-              right: 0,
-              bottom: widget.height - (heightPerSlot * (i + 1)),
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () => widget.onDateTap?.call(
-                  DateTime(
-                    widget.date.year,
-                    widget.date.month,
-                    widget.date.day,
-                    0,
-                    widget.minuteSlotSize.minutes * i,
+// ─────────────────────────────────────────────────────────────────────
+// Sticky CTA
+// ─────────────────────────────────────────────────────────────────────
+
+class _StickyCTA extends StatelessWidget {
+  const _StickyCTA({
+    required this.loading,
+    required this.isOnToday,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final bool loading;
+  final bool isOnToday;
+  final VoidCallback onAdd;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.places;
+    final bg = isOnToday ? theme.paperRaised : theme.anchor;
+    final fg = isOnToday ? theme.ink : theme.anchorOnContrast;
+    final border = isOnToday ? Border.all(color: theme.anchor, width: 1.5) : null;
+
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(PlacesRadius.md),
+          border: border,
+        ),
+        child: InkWell(
+          onTap: loading ? null : (isOnToday ? onRemove : onAdd),
+          borderRadius: BorderRadius.circular(PlacesRadius.md),
+          child: SizedBox(
+            height: 56,
+            child: Center(
+              child: loading
+                  ? SizedBox(
+                      width: 22, height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(fg),
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isOnToday ? Icons.check_rounded : Icons.add_rounded,
+                          color: fg,
+                        ),
+                        const SizedBox(width: PlacesSpacing.sm),
+                        Text(
+                          isOnToday ? "On today's route" : "Add to today's route",
+                          style: TextStyle(
+                            color: fg,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Hours editor sheet (custom places)
+// ─────────────────────────────────────────────────────────────────────
+
+class _HoursEditorSheet extends StatelessWidget {
+  const _HoursEditorSheet({required this.place});
+  final Place place;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.places;
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.paperRaised,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(PlacesRadius.lg)),
+        ),
+        padding: const EdgeInsets.all(PlacesSpacing.lg),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36, height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.ash, borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                child: SizedBox(width: widget.width, height: heightPerSlot),
               ),
-            ),
-          // Time indicator dot for today only
-          if (isToday)
-            Positioned(
-              top:
-                  (_currentTime.hour * 60 + _currentTime.minute) *
-                      widget.heightPerMinute -
-                  5,
-              left: 0,
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: widget.dotColor,
-                  shape: BoxShape.circle,
+              const SizedBox(height: PlacesSpacing.lg),
+              Text('Edit hours', style: PlacesType.headline(theme.ink)),
+              const SizedBox(height: PlacesSpacing.sm),
+              Text(
+                'Hours editing arrives in a follow-up pass. For now, '
+                'submit the place and edit hours from the calendar surface.',
+                style: PlacesType.bodySmall(theme.inkMuted),
+              ),
+              const SizedBox(height: PlacesSpacing.lg),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(foregroundColor: theme.anchor),
+                  child: const Text('Close'),
                 ),
               ),
-            ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
