@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:calendar_view/calendar_view.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../bloc/calendar/calendar_ui_state.dart';
 import '../../bloc/calendar/calendar_ui_cubit.dart';
@@ -91,7 +92,7 @@ class CalendarViewStackWidget extends StatelessWidget {
       daysToAdvance = 7;
     }
 
-    final now = DateTime.now();
+    final now = tz.TZDateTime.now(tz.local);
     final initialScrollOffset = (now.hour * 60.0 + now.minute) * 1.0;
     final isShowingToday =
         DateUtils.isSameDay(uiState.baseDate, now) ||
@@ -232,7 +233,7 @@ class CalendarViewStackWidget extends StatelessWidget {
         timeLineBuilder: (date) =>
             _buildTimeLineLabel(date, use24HourFormat, textSmallColor),
         weekDayBuilder: (date) {
-          final isToday = DateUtils.isSameDay(date, DateTime.now());
+          final isToday = DateUtils.isSameDay(date, tz.TZDateTime.now(tz.local));
           final dayEvents = controller.getEventsOnDay(date);
           final allDayEvents = dayEvents
               .where((e) => e.startTime == null || e.endTime == null)
@@ -353,7 +354,7 @@ class CalendarViewStackWidget extends StatelessWidget {
               if (!isShowingToday)
                 TextButton(
                   onPressed: () => context.read<CalendarUiCubit>().navigateDate(
-                    DateTime.now(),
+                    tz.TZDateTime.now(tz.local),
                   ),
                   style: TextButton.styleFrom(
                     foregroundColor: theme.anchor,

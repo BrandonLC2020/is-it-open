@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'calendar_ui_state.dart';
 
 class CalendarUiCubit extends Cubit<CalendarUiState> {
@@ -6,7 +7,7 @@ class CalendarUiCubit extends Cubit<CalendarUiState> {
     : super(
         CalendarUiState(
           currentView: CalendarViewType.week,
-          baseDate: initialDate ?? DateTime.now(),
+          baseDate: initialDate ?? tz.TZDateTime.now(tz.local),
           isCalendarExpanded: false,
           isCalendarMinimized: false,
           showBusinessHours: true,
