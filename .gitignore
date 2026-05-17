@@ -169,11 +169,16 @@ _override.tf.json
 *.sqlite3
 backend/db.sqlite3
 
-.worktrees/
-
+# Agent & Design "Secret Sauce"
+.agent/
+agent.md
+conductor/
+docs/superpowers/
 .gemini/
-gha-creds-*.json
-
-# Design context — kept local; carries product/visual strategy that isn't shipped.
+.claude/
+.worktrees/
+CLAUDE.md
+GEMINI.md
 DESIGN.md
 PRODUCT.md
+gha-creds-*.json
